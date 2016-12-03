@@ -301,7 +301,7 @@ shellcode = "\x31\xc0\x50\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\x50\x8
 
 The encoder can be found <a href="https://github.com/skahwah/slae/blob/master/assignment4/encode.rb">here</a>.
 
-### Decoding and Execuion
+### Decoding and Execution
 I built on top of <a href="https://twitter.com/SecurityTube">Vivek's</a> nasm linker and assembler shell script and added the opcode extractor and C compiler used in the SLAE course. You can find `super-compile.sh` <a href="https://github.com/skahwah/slae/blob/master/super-compile.sh">here</a>.
 
 ```shell
