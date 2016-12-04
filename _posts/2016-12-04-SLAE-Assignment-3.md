@@ -1,4 +1,4 @@
---
+---
 layout: post
 title: SLAE Assignment 3
 date: '2016-12-04T20:30:00.000-06:00'
@@ -14,6 +14,7 @@ tags:
 - access syscall
 comments: true
 ---
+
 ### SLAE Assignment Stub
 This blog post has been created for completing the requirements of the SecurityTube Linux Assembly Expert certification.
 
