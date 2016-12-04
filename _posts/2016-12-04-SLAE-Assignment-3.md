@@ -1,7 +1,7 @@
 ---
 layout: post
 title: SLAE Assignment 3
-date: '2016-12-04T20:30:00.000-06:00'
+date: '2016-12-04T17:10:00.000-06:00'
 author: Sanjiv Kawa
 tags:
 - SLAE
