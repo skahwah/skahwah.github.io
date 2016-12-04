@@ -798,7 +798,7 @@ End of assembler dump.
 0x0804a084 in egg_hunter ()
 ```
 
-After performing an unconditional jump to the memory location referenced by the `EDI` register, the execution of the process is redirected to `0x0804a0a8` which contains the first instruction of the `exexve-stack` `/bin/sh` shellcode.
+After performing an unconditional jump to the memory location referenced by the `EDI` register, the execution of the process is redirected to `0x0804a0a8` which contains the first instruction of the `exexve-stack` `/bin/sh` shellcode. Continuing the execution of the process results in the execution of `/bin/sh`.
 
 ```nasm
 (gdb)
@@ -859,5 +859,11 @@ Dump of assembler code for function second_stage:
    0x0804a0c1 <+33>:	add    BYTE PTR [eax],al
 End of assembler dump.
 0x0804a0a8 in second_stage ()
-(gdb)
+(gdb) c
+Continuing.
+process 5139 is executing new program: /bin/dash
+Error in re-setting breakpoint 1: No symbol table is loaded.  Use the "file" command.
+Error in re-setting breakpoint 1: No symbol table is loaded.  Use the "file" command.
+Error in re-setting breakpoint 1: No symbol table is loaded.  Use the "file" command.
+$
 ```
