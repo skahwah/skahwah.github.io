@@ -40,10 +40,10 @@ Compile it using these options: `gcc -fno-stack-protector -z execstack shellcode
 A network port to hex converter can be found <a href="https://github.com/skahwah/slae/blob/master/assignment1/networkhex.rb">here</a>.
 
 ```ruby
-21:56 skawa@skawa-mbp: Desktop $ ruby networkhex.rb
-IP: 127.0.0.1 is \x7f\x00\x00\x01
-Port: 3879 is \x27\x0f
-21:56 skawa@skawa-mbp: Desktop $ 
+08:25 skawa@skawa-mbp: Desktop $ ruby networkhex.rb 
+IP: 192.168.156.156 is \xc0\xa8\x9c\x9c
+Port: 3879 is \x0f\x27
+08:25 skawa@skawa-mbp: Desktop $ 
 ```
 
 
