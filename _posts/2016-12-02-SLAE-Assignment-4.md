@@ -1,6 +1,6 @@
 ---
 layout: post
-title: SLAE Assignment 4
+title: SLAE Assignment 4 - Custom Encoder
 date: '2016-12-02T20:30:00.000-06:00'
 author: Sanjiv Kawa
 tags:
