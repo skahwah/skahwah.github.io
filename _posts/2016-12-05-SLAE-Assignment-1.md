@@ -32,10 +32,19 @@ The bind TCP shell creates a local socket and listens for an incoming connection
 
 The bind TCP shell can be found <a href="https://github.com/skahwah/slae/blob/master/assignment1/bind.nasm">here</a>.
 
-
 A wrapper for the shellcode can be found here <a href="https://github.com/skahwah/slae/blob/master/assignment1/shellcode-bind.c">here</a>.
 
 Compile it using these options: `gcc -fno-stack-protector -z execstack shellcode-bind.c -o shellcode-bind`
+
+
+A network port to hex converter can be found <a href="https://github.com/skahwah/slae/blob/master/assignment1/networkhex.rb">here</a>.
+
+```ruby
+21:20 skawa@skawa-mbp: Desktop $ ruby networkhex.rb
+IP: 127.0.0.1 is \x7f\x00\x00\x01
+Port: 9999 is \x0f\x27
+21:22 skawa@skawa-mbp: Desktop $
+```
 
 
 ### Examining a Bind TCP shell
