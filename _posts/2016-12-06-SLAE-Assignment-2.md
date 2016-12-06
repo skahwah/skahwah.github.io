@@ -22,7 +22,7 @@ This blog post has been created for completing the requirements of the SecurityT
 Student ID: SLAE-807
 
 
-### Assignment 1 Requirements
+### Assignment 2 Requirements
 - Create a reverse TCP shellcode
 - The shellcode connects back to a configured IP address and port. A shell gets executed on a successful connection
 - The IP address and port should be easily configurable
