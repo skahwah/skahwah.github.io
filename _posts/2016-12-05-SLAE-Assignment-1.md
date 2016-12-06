@@ -40,10 +40,10 @@ Compile it using these options: `gcc -fno-stack-protector -z execstack shellcode
 A network port to hex converter can be found <a href="https://github.com/skahwah/slae/blob/master/assignment1/networkhex.rb">here</a>.
 
 ```ruby
-08:25 skawa@skawa-mbp: Desktop $ ruby networkhex.rb 
+08:25 skawa@skawa-mbp: Desktop $ ruby networkhex.rb
 IP: 192.168.156.156 is \xc0\xa8\x9c\x9c
 Port: 3879 is \x0f\x27
-08:25 skawa@skawa-mbp: Desktop $ 
+08:25 skawa@skawa-mbp: Desktop $
 ```
 
 
@@ -473,3 +473,15 @@ skawa
 ^C
 19:05 skawa@skawa-mbp: ~ $
 ```
+
+#### Wrapper
+For ease of configuration, I have put together a script that takes user supplied network information and converts it to hexadecimal. This can be found <a href="https://github.com/skahwah/slae/blob/master/assignment1/networkhex.rb">here</a>. The IP address is irrelevant for this particular case.
+
+```ruby
+08:25 skawa@skawa-mbp: Desktop $ ruby networkhex.rb
+IP: 192.168.156.156 is \xc0\xa8\x9c\x9c
+Port: 3879 is \x0f\x27
+08:25 skawa@skawa-mbp: Desktop $
+```
+
+The converted network port can then be placed into the `PORT` variable of the `C` shellcode wrapper. This can be found <a href="https://github.com/skahwah/slae/blob/master/assignment1/shellcode-bind.c">here</a>.
