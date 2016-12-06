@@ -1,6 +1,6 @@
 ---
 layout: post
-title: SLAE Assignment 3
+title: SLAE Assignment 3 - Egg Hunter
 date: '2016-12-04T17:10:00.000-06:00'
 author: Sanjiv Kawa
 tags:
