@@ -40,6 +40,7 @@ Ultimately, the goal of polymorphic shellcode is to evade antivirus detection.
 The author of the original shellcode is Kris Katterjohn. The code can be found <a href="http://shell-storm.org/shellcode/files/shellcode-212.php">here</a>.
 
 #### Original Shellcode
+
 ```nasm
 ;By Kris Katterjohn 11/13/2006
 
@@ -61,6 +62,7 @@ _start:
 ```
 
 #### Compiling the Original Shellcode
+
 ```nasm
 skawa@ubuntu:~/Desktop/code/assignment/assignment6$ ./compile.sh kill-all-processes-original
 [+] Assembling with Nasm
@@ -103,6 +105,7 @@ _start:
 ```
 
 #### Compiling the Polymorphic Shellcode
+
 ```
 skawa@ubuntu:~/Desktop/code/assignment/assignment6$ ./compile.sh kill-all-processes
 [+] Assembling with Nasm
@@ -114,6 +117,7 @@ skawa@ubuntu:~/Desktop/code/assignment/assignment6$
 ```
 
 #### Disassembly of the Original Shellcode
+
 ```nasm
 skawa@ubuntu:~/Desktop/code/assignment/assignment6$ gdb -q ./kill-all-processes-original
 Reading symbols from /home/skawa/Desktop/code/assignment/assignment6/kill-all-processes-original...(no debugging symbols found)...done.
@@ -160,6 +164,7 @@ gs             0x0	0
 ```
 
 #### Disassembly of the Polymorphic Shellcode
+
 ```nasm
 skawa@ubuntu:~/Desktop/code/assignment/assignment6$ gdb -q ./kill-all-processes
 Reading symbols from /home/skawa/Desktop/code/assignment/assignment6/kill-all-processes...(no debugging symbols found)...done.
@@ -215,6 +220,7 @@ In addition, the size of the original shellcode is 11 bytes. The size of the pol
 The author of the original shellcode is "root@thegibson". The code can be found <a href="http://shell-storm.org/shellcode/files/shellcode-566.php">here</a>.
 
 #### Original Shellcode
+
 ```nasm
 ; linux/x86 chmod 666 /etc/shadow 27 bytes
 ; root@thegibson
@@ -237,6 +243,7 @@ _start:
 ```
 
 #### Compiling the Original Shellcode
+
 ```nasm
 skawa@ubuntu:~/Desktop/code/assignment/assignment6$ ./compile.sh chmod-original
 [+] Assembling with Nasm
@@ -283,6 +290,7 @@ _start:
 ```
 
 #### Compiling the Polymorphic Shellcode
+
 ```nasm
 skawa@ubuntu:~/Desktop/code/assignment/assignment6$ ./compile.sh chmod
 [+] Assembling with Nasm
@@ -294,6 +302,7 @@ skawa@ubuntu:~/Desktop/code/assignment/assignment6$
 ```
 
 #### Disassembly of the Original Shellcode
+
 ```nasm
 skawa@ubuntu:~/Desktop/code/assignment/assignment6$ gdb -q ./chmod-original
 Reading symbols from /home/skawa/Desktop/code/assignment/assignment6/chmod-original...(no debugging symbols found)...done.
@@ -345,6 +354,7 @@ gs             0x0	0
 ```
 
 #### Disassembly of the Polymorphic Shellcode
+
 ```nasm
 skawa@ubuntu:~/Desktop/code/assignment/assignment6$ gdb -q ./chmod
 Reading symbols from /home/skawa/Desktop/code/assignment/assignment6/chmod...(no debugging symbols found)...done.
@@ -408,6 +418,7 @@ In addition, the size of the original shellcode is 27 bytes. The size of the pol
 The author of the original shellcode is "kernel_panik". The code can be found <a href="http://shell-storm.org/shellcode/files/shellcode-752.php">here</a>.
 
 #### Original Shellcode
+
 ```nasm
 ;Title: linux/x86 Shellcode execve ("/bin/sh") - 21 Bytes
 ;Date     : 10 Feb 2011
@@ -430,6 +441,7 @@ _start:
 ```
 
 #### Compiling the Original Shellcode
+
 ```
 skawa@ubuntu:~/Desktop/code/assignment/assignment6$ ./compile.sh execve-bin-sh-stack-original
 [+] Assembling with Nasm
@@ -475,6 +487,7 @@ _start:
 ```
 
 #### Compiling the Polymorphic Shellcode
+
 ```
 skawa@ubuntu:~/Desktop/code/assignment/assignment6$ ./compile.sh execve-bin-sh-stack
 [+] Assembling with Nasm
@@ -486,6 +499,7 @@ skawa@ubuntu:~/Desktop/code/assignment/assignment6$
 ```
 
 #### Disassembly of the Original Shellcode
+
 ```nasm
 skawa@ubuntu:~/Desktop/code/assignment/assignment6$ gdb -q ./execve-bin-sh-stack-original
 Reading symbols from /home/skawa/Desktop/code/assignment/assignment6/execve-bin-sh-stack-original...(no debugging symbols found)...done.
@@ -536,7 +550,8 @@ gs             0x0	0
 ```
 
 #### Disassembly of the Polymorphic Shellcode
-```
+
+```nasm
 skawa@ubuntu:~/Desktop/code/assignment/assignment6$ gdb -q ./execve-bin-sh-stack
 Reading symbols from /home/skawa/Desktop/code/assignment/assignment6/execve-bin-sh-stack...(no debugging symbols found)...done.
 (gdb) break _start
