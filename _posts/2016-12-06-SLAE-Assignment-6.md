@@ -23,7 +23,7 @@ Student ID: SLAE-807
 
 
 ### Assignment 6 Requirements
-- Take three shellcodes from <a href="http://shell-storm.org/">Shell-Storm</a and create polymorphic versions of them to beat pattern matching.
+- Take three shellcodes from <a href="http://shell-storm.org/">Shell-Storm</a> and create polymorphic versions of them to beat pattern matching.
 - The polymorphic version can not be larger than 150% of the existing shellcode. So if the existing shellcode is 30 bytes, the polymorphic version can not be larger than 45 bytes.
 
 
