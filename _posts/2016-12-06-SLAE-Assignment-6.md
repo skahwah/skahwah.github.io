@@ -63,7 +63,7 @@ _start:
 
 #### Compiling the Original Shellcode
 
-```nasm
+```
 skawa@ubuntu:~/Desktop/code/assignment/assignment6$ ./compile.sh kill-all-processes-original
 [+] Assembling with Nasm
 [+] Linking
@@ -244,7 +244,7 @@ _start:
 
 #### Compiling the Original Shellcode
 
-```nasm
+```
 skawa@ubuntu:~/Desktop/code/assignment/assignment6$ ./compile.sh chmod-original
 [+] Assembling with Nasm
 [+] Linking
@@ -291,7 +291,7 @@ _start:
 
 #### Compiling the Polymorphic Shellcode
 
-```nasm
+```
 skawa@ubuntu:~/Desktop/code/assignment/assignment6$ ./compile.sh chmod
 [+] Assembling with Nasm
 [+] Linking
