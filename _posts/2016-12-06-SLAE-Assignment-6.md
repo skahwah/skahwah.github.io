@@ -58,7 +58,7 @@ _start:
   push byte 9
   pop ecx
   int 0x80
- ```
+```
 
 #### Compiling the Original Shellcode
 ```nasm
