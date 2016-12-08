@@ -31,12 +31,12 @@ Student ID: SLAE-807
 ### msfvenom Shellcode
 The following shellcodes and corresponding debugging methods have been selected:
 
-- `linux/x86/shell/read_file` - GDB
-- `linux/x86/exec` - Libemu
-- `linux/x86/shell/reverse_ipv6_tcp` - Ndiasm
+1\. `linux/x86/shell/read_file` - GDB <br>
+2\. `linux/x86/exec` - Libemu <br>
+3\. `linux/x86/shell/reverse_ipv6_tcp` - Ndiasm <br>
 
 
-### read_file Payload Creation
+### 1. read_file Payload Creation
 Creating a payload for `linux/x86/shell/read_file` in C format.
 
 ```
@@ -213,7 +213,7 @@ int 0x80    ;execute exit system call
 ```
 
 
-### exec Payload Creation
+### 2. exec Payload Creation
 Libemu is a fantastic emulator that can help with running and disassembling shellcode in to meaningful segments and instructions.
 
 The example shellcode below is the `linux/x86/exec` payload part of `msfvenom`.
@@ -278,7 +278,7 @@ int 0x80              ;execute execve syscall
 ```
 
 
-### reverse_ipv6_tcp Payload Creation
+### 3. reverse_ipv6_tcp Payload Creation
 Creating a payload for `linux/x86/shell/reverse_ipv6_tcp` in C format.
 
 ```
