@@ -52,7 +52,7 @@ encrypt.c can be found <a href="https://github.com/skahwah/slae/blob/master/assi
 
 Below is an explanation of encrypt.c
 
-```code
+```
 /*
 encrypt.c
 Sanjiv Kawa (@skawasec)
@@ -199,7 +199,7 @@ decrypt.c can be found <a href="https://github.com/skahwah/slae/blob/master/assi
 
 Below is an explanation of decrypt.c
 
-```code
+```
 /*
 decrypt.c
 Sanjiv Kawa (@skawasec)
