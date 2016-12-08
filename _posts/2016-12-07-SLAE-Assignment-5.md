@@ -256,8 +256,7 @@ skawa@ubuntu:~/libemu/tools/sctest$dot execve.dot -T png -o execve.png
 skawa@ubuntu:~/libemu/tools/sctest$
 ```
 
-<img>
-
+<img src ="https://github.com/skahwah/skahwah.github.io/blob/master/_data/slae-assignment-5.png?raw=true" />
 
 #### Dissecting the Instructions
 ```nasm
