@@ -31,7 +31,7 @@ Student ID: SLAE-807
 ### Crypters
 Crypters are a program that encrypt an executable or shellcode and decrypt the executable or shellcode at run time. The goal of crypters is to evade antivirus detection.
 
-For this assignment, I decided to write the crypter in C and use the <a href="https://wiki.openssl.org/index.php/EVP_Symmetric_Encryption_and_Decryption">OpenSSL EVP</a> cipher routine. The encryption algorithm that was chosen is AES-256 with an 128 bit initialization vector in CBC mode.
+For this assignment, I decided to write the crypter in C and use the <a href="https://wiki.openssl.org/index.php/EVP_Symmetric_Encryption_and_Decryption">OpenSSL EVP</a> symmetric cipher routine. The encryption algorithm that was chosen is AES-256 with an 128 bit initialization vector in CBC mode.
 
 ### The Shellcode
 The example shellcode I will be using is a really simple stack-based `execve` SYSCALL that executes `/bin/sh`.
@@ -324,7 +324,7 @@ int decrypt(unsigned char *encrypted, int encrypted_len, unsigned char *key, uns
 }
 ```
 
-# Compiling and Executing
+### Compiling and Executing
 First, encrypt.c is compiled and then executed. The 256 bit AES key and 128 bit initialization vector used to encrypt the shellcode are displayed, along with the shellcode in it's original and encrypted forms.
 
 ```
