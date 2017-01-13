@@ -41,9 +41,9 @@ The nasm source is located <a href="https://github.com/skahwah/slae/blob/master/
 
 Here are the opcodes:
 
-```
+~~~ bash
 \x31\xc0\x50\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\x50\x89\xe2\x53\x89\xe1\xb0\x0b\xcd\x80
-```
+~~~
 
 ### encrypt.c
 encrypt.c is responsible for taking user supplied shellcode and encrypting using a 256 bit AES key and 128 bit initialization vector. Both the AES key and IV are randomly generated.
@@ -52,7 +52,7 @@ encrypt.c can be found <a href="https://github.com/skahwah/slae/blob/master/assi
 
 Below is an explanation of encrypt.c
 
-```
+~~~ c
 /*
 encrypt.c
 Sanjiv Kawa (@skawasec)
@@ -187,7 +187,7 @@ int encrypt(unsigned char *shellcode, int shellcode_len, unsigned char *key, uns
 
   return encrypted_len;
 }
-```
+~~~
 
 
 ### decrypt.c
@@ -199,7 +199,7 @@ decrypt.c can be found <a href="https://github.com/skahwah/slae/blob/master/assi
 
 Below is an explanation of decrypt.c
 
-```
+~~~ c
 /*
 decrypt.c
 Sanjiv Kawa (@skawasec)
@@ -322,12 +322,12 @@ int decrypt(unsigned char *encrypted, int encrypted_len, unsigned char *key, uns
 
   return decrypted_len;
 }
-```
+~~~
 
 ### Compiling and Executing
 First, encrypt.c is compiled and then executed. The 256 bit AES key and 128 bit initialization vector used to encrypt the shellcode are displayed, along with the shellcode in it's original and encrypted forms.
 
-```
+~~~ bash
 skawa@ubuntu:~/Desktop/code/assignment/assignment7$ gcc encrypt.c -l crypto -o encrypt
 skawa@ubuntu:~/Desktop/code/assignment/assignment7$ ./encrypt
 [+] AES 128 bit IV: KSB1FebW397VI5uG
@@ -336,13 +336,13 @@ skawa@ubuntu:~/Desktop/code/assignment/assignment7$ ./encrypt
 \x31\xc0\x50\x68\x6e\x2f\x73\x68\x68\x2f\x2f\x62\x69\x89\xe3\x50\x89\xe2\x53\x89\xe1\xb0\x0b\xcd\x80
 [+] Encrypted Shellcode (32 bytes):
 \xb0\x69\x09\xde\xc5\x63\x0e\x69\x5c\xd1\x7e\x34\xf3\xc1\x7b\x28\x6c\x47\x48\xd4\x5b\x83\x82\x6b\x4b\xb5\x52\x47\xb1\x3e\xf2\x70
-```
+~~~
 
 Second, the 256 bit AES key, 128 bit initialization vector and encrypted shellcode are all placed into decrypt.c
 
 decrypt.c then uses the aforementioned key and IV to decrypt the encrypted shellcode and display the shellcode in it's original form. The `execute_shellcode` function is then called and passes control of the program to the shellcode, this continues to use `execve` to execute `/bin/sh`.
 
-```
+~~~ bash
 skawa@ubuntu:~/Desktop/code/assignment/assignment7$ gcc encrypt.c -l crypto -o encrypt
 skawa@ubuntu:~/Desktop/code/assignment/assignment7$ ./encrypt
 [+] AES 128 bit IV: KSB1FebW397VI5uG
@@ -369,4 +369,4 @@ skawa@ubuntu:~/Desktop/code/assignment/assignment7$ ./decrypt
 [+] Executing Shellcode:
 
 $
-```
+~~~
