@@ -29,7 +29,7 @@ You can also find a copy of my resume <a href="https://github.com/skahwah/skahwa
 
 Feel free to get in touch with me using the form below:
 
-<div style="text-align: left;">
+
 <a href="http://www.foxyform.com/" id="foxyform_embed_link_655800"></a>
 <script type="text/javascript">
 (function(d, t){
@@ -38,4 +38,4 @@ Feel free to get in touch with me using the form below:
    g.src = "http://www.foxyform.com/js.php?id=655800&sec_hash=4431709aa98&width=350px";
    s.parentNode.insertBefore(g, s);
 }(document, "script"));
-</script></div>
+</script>
