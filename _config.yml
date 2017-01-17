@@ -8,9 +8,8 @@ logo:               'assets/img/me.png'
 background:         'assets/img/placeholder-big.jpg'
 tiled_bg:           false   # Set this true if you want to tile your background image, otherwise it will be covered
 locale:             en_US
-#url:                http://127.0.0.1:4000
-#bundle exec jekyll serve
 url:                https://popped.io
+#bundle jekyll exec serve
 
 # Jekyll
 permalink:          /:title/

