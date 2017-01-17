@@ -23,4 +23,6 @@ These are some of the certificates that I currently hold:
 <br>
 <br>
 <br>
+<br>
+<br>
 You can also find a copy of my resume <a href="https://github.com/skahwah/skahwah.github.io/blob/master/_data/resume.pdf">here</a>.
