@@ -27,15 +27,14 @@ These are some of the certificates that I currently hold:
 
 You can also find a copy of my resume <a href="https://github.com/skahwah/skahwah.github.io/blob/master/_data/resume.pdf">here</a>.
 
-Feel free to get in touch with me using the form below:
-
+Feel free to get in touch with me using the form below
 
 <a href="http://www.foxyform.com/" id="foxyform_embed_link_655800"></a>
 <script type="text/javascript">
 (function(d, t){
    var g = d.createElement(t),
        s = d.getElementsByTagName(t)[0];
-   g.src = "http://www.foxyform.com/js.php?id=655800&sec_hash=4431709aa98&width=350px";
+   g.src = "http://www.foxyform.com/js.php?id=655800&sec_hash=4431709aa98&width=350spx";
    s.parentNode.insertBefore(g, s);
 }(document, "script"));
 </script>
