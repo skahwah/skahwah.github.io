@@ -142,7 +142,7 @@ After setting a new password, feel free to close your browser and move back into
 
 <figure>
   <center>
-    <img src="https://1.bp.blogspot.com/-A8_LGW_Fvhc/V_aOweRnoLI/AAAAAAAACNw/J7fSo6ORs3YO3jVK2-ip_ItDjFjj-q6sQCEw/s400/4.png">
+    <img src="https://1.bp.blogspot.com/-A8_LGW_Fvhc/V_aOweRnoLI/AAAAAAAACNw/J7fSo6ORs3YO3jVK2-ip_ItDjFjj-q6sQCEw/s400/4.png">s
     <figurecaption>This will launch the BloodHound native application. Set the database URL to: bolt://localhost:7687 and the database username and password to neo4j/yourNewPass</figurecaption>
   </center>
 <figure>
