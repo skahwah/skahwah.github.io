@@ -1,7 +1,7 @@
 ---
 layout: post
-title: Vagran and Chef
-date: '2016-12-07T18:40:00.000-06:00'
+title: Staying clean with Vagrant and Chef
+date: '2017-05-15T18:05:00.000-06:00'
 author: Sanjiv Kawa
 tags:
 - Vagrant
@@ -13,10 +13,10 @@ tags:
 comments: true
 ---
 
-[[_TOC_]]
-
-### Intro
+## Intro
 I've recently been thinking about the most effective way to sanitize my pen-testing VM's prior to the start of a new engagement. Reason being, pen-testing VM's can be quite unsanitary if neglected.
+
+<img style="float: center;" src="https://raw.githubusercontent.com/skahwah/skahwah.github.io/master/_data/wash-hands.jpg" />
 
 After the execution of most tools, confidential Client related data is stored in unknown/random locations, log files, or hidden directories. A good example of this are commands that are kept in history files that could contain credentials, asset information, or console output from Client systems.
 
@@ -69,17 +69,17 @@ Here are some of the tools that you'll need to follow along:
 - VMware Fusion (Paid)
 - Vagrant VMware plugin (Paid)
 
-### Creating a custom VMware Vagrant box
+## 1. Creating a custom VMware Vagrant box
 As mentioned above, most of my battle was spent with creating a custom Vagrant Box for VMware. This is why I'm going to try and list as much detail as I possibly can so future VMware Vagranter's don't end up losing as much sleep as I did.
 
-#### ISO Image
+### 1.1 ISO Image
 The custom VMware Vagrant box we'll be creating is a 64-bit version of Kali 2017.1. You can grab the ISO  [here](http://cdimage.kali.org/kali-2017.1/kali-linux-2017.1-amd64.iso).
 
 There are a number of Kali boxes that exist in [HashiCorp's Atlas box catalog](https://atlas.hashicorp.com/boxes/search). A couple of reasons I elected to create my own box:
 1. For fun - I wanted to learn how to create a Vagrant Box from scratch.
 2. If this box is going to be in real Client environments, I want to know the contents of my box. In other words, I'm not trusting any pre-made boxes.
 
-#### SSH key generation
+### 1.2 SSH key generation
 Before creating a virtual instance of Kali we need to create an SSH key so Vagrant can interact with the virtual guest. You can use an existing key if you want, for the purposes of this blog post, I created a new SSH key pair on my host.
 
 Keep note of the public key.
@@ -92,7 +92,7 @@ $ cat vagrant-demo.pub
 ssh-rsa AAAAB3N...
 ~~~
 
-#### Creating the VMware virtual machine
+### 1.3 Creating the VMware virtual machine
 Creating the VM is pretty standard. There are tools which automate this process, such as [Packer](https://www.packer.io/downloads.html). I found Packer works really well when creating a VirtualBox VM, but it struggles with certain things when creating a VM for VMware Fusion.
 
 As such, I manually built my VM with the following specifications. Try to stick with these creation steps if you want a Vagrant box that has features like network interface selection and shared folder support.
@@ -179,7 +179,7 @@ $ ssh -i ~/.ssh/vagrant-demo root@192.168.156.214
 root@kali:~# poweroff
 ~~~
 
-#### Convert a VMware VM to a Vagrant box
+### 1.4 Convert a VMware VM to a Vagrant box
 As opposed to VirtualBox, packaging a VMware VM into a Vagrant Box is more of a manual process. Again, [Packer](https://www.packer.io/downloads.html) can automate this, but works better for VirtualBox.
 
 First, ensure that the recently created VM has been powered off. Check again.
@@ -213,7 +213,7 @@ $ mv kali-2017-x64.box ~/Desktop/
 $ cd ~/Desktop/
 ~~~
 
-### Vagrant
+## 2. Vagrant
 At this point we no longer need the Kali VM that we created with VMware. Feel free to delete it.
 
 The first thing we're going to do is check if the Vagrant VMware plugin has been added. Installation steps for adding this plugin to Vagrant can be found [here](https://www.vagrantup.com/docs/vmware/installation.html).
@@ -286,7 +286,7 @@ Vagrant.configure("2") do |config|
 end
 ~~~
 
-Once the configurations have been made to the Vagrantfile we can `vagrant up`. This spins up a linked clone of the kali-2017-x64 Vagrant box. There will be several warnings which are safe to ignore. Including the rather verbose message at the end which reads "Vagrant attempted to execute the capability ...".
+Once the configurations have been made to the Vagrantfile we can `vagrant up`. This spins up a linked clone of the kali-2017-x64 Vagrant box. There will be several warnings which are safe to ignore. Including the rather verbose message at the end which reads "*Vagrant attempted to execute the capability ...*".
 ~~~shell
 $ cd ~/Desktop/kali-x64/
 $ vagrant up
@@ -366,11 +366,11 @@ We can use `vagrant halt` to shut down the VM or `vagrant suspend` to suspend th
 
 At this point, we have successfully created a custom Vagrant box from a VMware VM!
 
-### Provisioning Vagrant boxes with Chef
+## 3. Chef
 We need to do a little housekeeping before we can start provisioning our Vagrant box with Chef.
 
-#### Housekeeping
-The first thing we'll need to do is install [https://downloads.chef.io/chefdk#mac_os_x](chefdk).
+### 3.1 Housekeeping
+The first thing we'll need to do is install [chefdk](https://downloads.chef.io/chefdk#mac_os_x).
 
 After that, ensure that Ruby >=2.3.1 is installed on your host. You can use the following instructions if you have the homebrew package manager installed.
 ~~~shell
@@ -411,7 +411,7 @@ This will tell knife-solo to treat a release that has the description "Kali GNU/
 
 That should wrap up all of the housekeeping steps.
 
-#### Creating Chef cookbooks
+### 3.2 Creating Chef cookbooks
 I'm going to preface this section by saying that I am relatively new to Chef and could be doing this completely wrong. Please correct me if you think I can do this better. From my understanding, the organization of Chef kitchens is similar to the following:
 ~~~shell
 chef-kitchen
@@ -486,7 +486,7 @@ end
 
 ~~~
 
-#### Provisioning Vagrant boxes with Chef
+### 3.3 Provisioning Vagrant boxes with Chef
 Once changes have been made to our system_configurations cookbook, we'll navigate back to our Chef kitchen in the Vagrant kali-x64 directory and prepare the Vagrant box. This will do several things such as, install the Chef client on the Vagrant box and make it a member node of our kali_kitchen.
 ~~~shell
 $ cd ~/Desktop/kali-x64/kali_kitchen
@@ -557,12 +557,12 @@ tools
 root@kali:~#
 ~~~
 
-#### Other cookbook thoughts
-I have some cookbook ideas and over time will be adding them to [https://github.com/skahwah/chef](my GitHub page). This will be things like:
+### 3.4 Other cookbook thoughts
+I have some cookbook ideas and over time will be adding them to [my GitHub page](https://github.com/skahwah/chef). This will be things like:
 - A cookbook containing all of the tools I frequently use, this will download the tools into the /tools directory then install them
 - A cookbook for updates and upgrades that runs periodically
 
-### Staying clean with Vagrant and Chef
+## 4. Staying clean with Vagrant and Chef
 All of this seems like a lot of work, but once your base box is created and your Chef cookbooks have been made, it's really easy to rapidly provision systems prior to the start of an engagement. In addition, small Vagrant files result in your penetration testing environment becoming a lot smaller and the introduction of cookbooks make it completely portable.
 
 Let's create a scenario. It's Friday, you've collected all of your evidence and the pen-testing gig you were on to is now over. You can rip down your entire Vagrant environment with a single command:
