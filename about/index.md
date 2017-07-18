@@ -6,7 +6,7 @@ date: 2016-10-10
 comments: false
 ---
 
-I enjoy searching for creative ways to break into restricted networks and applications. I also like to write tools that automate things or make a life a little easier. Something I’m trying to get better at is binary analysis and exploit development. When my laptop battery dies you can find me at  breweries, on the ski hill or playing soccer.
+I enjoy searching for creative ways to break into restricted networks and applications. I also like to write tools that automate things to make life a little easier. Something I’m trying to get better at is binary analysis and exploit development. When my laptop battery dies you can find me at  breweries, on the ski hill or playing soccer.
 
 These are some of the certificates that I currently hold:
 
