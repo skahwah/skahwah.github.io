@@ -1,4 +1,602 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.4.3">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2017-05-15T18:03:54-06:00</updated><id>http://localhost:4000/</id><title type="html">popped.io</title><subtitle>A collection of my security research, random projects and attempts to amuse.</subtitle><entry><title type="html">SLAE Assignment 5 - msfvenom Shellcode Analysis</title><link href="http://localhost:4000/SLAE-Assignment-5/" rel="alternate" type="text/html" title="SLAE Assignment 5 - msfvenom Shellcode Analysis" /><published>2016-12-07T20:40:00-07:00</published><updated>2016-12-07T20:40:00-07:00</updated><id>http://localhost:4000/SLAE-Assignment-5</id><content type="html" xml:base="http://localhost:4000/SLAE-Assignment-5/">&lt;h3 id=&quot;slae-assignment-stub&quot;&gt;SLAE Assignment Stub&lt;/h3&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.4.3">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2018-01-13T14:51:03-05:00</updated><id>http://localhost:4000/</id><title type="html">popped.io</title><subtitle>A collection of my security research, random projects and attempts to amuse.</subtitle><entry><title type="html">automato</title><link href="http://localhost:4000/automato/" rel="alternate" type="text/html" title="automato" /><published>2018-01-13T00:00:00-05:00</published><updated>2018-01-13T00:00:00-05:00</updated><id>http://localhost:4000/automato</id><content type="html" xml:base="http://localhost:4000/automato/">&lt;p&gt;automato uses native LDAP libraries to automate the collection and enumeration of various directory objects. This is incredibly useful during an internal penetration test.&lt;/p&gt;
+
+&lt;p&gt;automato can also conduct password spraying attacks, and identify if a user is a local administrator against any number of systems.&lt;/p&gt;
+
+&lt;p&gt;Output files are automatically created for evidence preservation.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://github.com/skahwah/automato&quot;&gt;Download&lt;/a&gt;&lt;/p&gt;</content><author><name></name></author><category term="automato" /><category term="github" /><category term="sanjiv kawa" /><summary type="html">Automate user-focused enumeration tasks during an internal penetration test</summary></entry><entry><title type="html">Staying clean with Vagrant and Chef</title><link href="http://localhost:4000/Vagrant-and-Chef/" rel="alternate" type="text/html" title="Staying clean with Vagrant and Chef" /><published>2017-05-15T20:05:00-04:00</published><updated>2017-05-15T20:05:00-04:00</updated><id>http://localhost:4000/Vagrant-and-Chef</id><content type="html" xml:base="http://localhost:4000/Vagrant-and-Chef/">&lt;h2 id=&quot;intro&quot;&gt;Intro&lt;/h2&gt;
+&lt;p&gt;I’ve recently been thinking about the most effective way to sanitize my pen-testing VM’s prior to the start of a new engagement. Reason being, pen-testing VM’s can be quite unsanitary if neglected.&lt;/p&gt;
+
+&lt;p&gt;&lt;img style=&quot;float: center;&quot; src=&quot;https://raw.githubusercontent.com/skahwah/skahwah.github.io/master/_data/wash-hands.jpg&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;After the execution of most tools, confidential Client related data is stored in unknown/random locations, log files, or hidden directories. A good example of this are commands that are kept in history files that could contain credentials, asset information, or console output from Client systems.&lt;/p&gt;
+
+&lt;p&gt;My paranoia has only further been fueled by recent conference talks with the premise of blue team hunting the red team.&lt;/p&gt;
+
+&lt;p&gt;Up until now, I’ve been reverting to previous VM snapshots of “gold images” that are pre-configured with my preferred system configurations and tools. This is really effective, in the sense that it ensures that residual data from one pentest does not get introduced into the network for another pentest. However, it’s not the most efficient in terms of manageability, and it also doesn’t allow for dynamic changes such as the introduction of new tools or system and software updates.&lt;/p&gt;
+
+&lt;p&gt;As such, I’ve taken a page out of the DevOps playbook on virtual machine provisioning in my quest to create a safe, hygienic pen-testing environment.&lt;/p&gt;
+
+&lt;h3 id=&quot;main-menu&quot;&gt;Main menu&lt;/h3&gt;
+&lt;p&gt;In this blog post you will learn how to:&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;Create a custom Vagrant base box for VMware&lt;/li&gt;
+  &lt;li&gt;Configure things like shared folders and bridged/NAT interfaces&lt;/li&gt;
+  &lt;li&gt;Modify system configurations and install packages via Chef&lt;/li&gt;
+  &lt;li&gt;Using Vagrant and Chef to create a sanitary pen-testing environment&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;a-word-before-we-start&quot;&gt;A word before we start&lt;/h3&gt;
+&lt;p&gt;This blog post will largely be centered around paid tools, such as VMware Fusion and the Vagrant VMware plugin.&lt;/p&gt;
+
+&lt;p&gt;There are lots of existing blog posts that cover creating custom Vagrant boxes and provisioning them for VirtualBox, but surprisingly a handful of scattered sources for VMware.&lt;/p&gt;
+
+&lt;p&gt;Also, as I started playing more with VMware custom box creation, it became apparent that a lot of the native Vagrantfile configurations are geared for VirtualBox and not VMware. As such, I’ve made some creative hacks in the Vagrantfile to accommodate for the lack of native support. We’ll get into this later, but for now, one example is:&lt;/p&gt;
+
+&lt;p&gt;Vagrant says to use the following configuration in the Vagrantfile to sync a folder from the virtual host to the virtual guest.&lt;/p&gt;
+&lt;div class=&quot;language-ruby highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;config&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;vm&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;synced_folder&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;vagrant_data/&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;/home/vagrant_data&quot;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Well, this simply does not work when you are trying to create a custom box for VMware. Instead, I discovered that you can make direct modifications to the VMware vmx file and introduce folder sharing like this:&lt;/p&gt;
+&lt;div class=&quot;language-ruby highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;config&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;vm&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;provider&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;vmware_fusion&quot;&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;do&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;
+  &lt;span class=&quot;nf&quot;&gt;v&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;vmx&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;sharedFolder0.present&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;true&quot;&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;v&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;vmx&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;sharedFolder0.enabled&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;true&quot;&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;v&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;vmx&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;sharedFolder0.readAccess&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;true&quot;&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;v&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;vmx&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;sharedFolder0.writeAccess&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;true&quot;&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;v&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;vmx&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;sharedFolder0.hostPath&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;#{&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;current_dir&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;/vagrant_data&quot;&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;v&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;vmx&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;sharedFolder0.guestName&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;vagrant_data&quot;&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;v&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;vmx&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;sharedFolder0.expiration&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;never&quot;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;requirements&quot;&gt;Requirements&lt;/h3&gt;
+&lt;p&gt;Here are some of the tools that you’ll need to follow along:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Vagrant (Free)&lt;/li&gt;
+  &lt;li&gt;chefdk (Free)&lt;/li&gt;
+  &lt;li&gt;knife-solo (Free)&lt;/li&gt;
+  &lt;li&gt;Ruby &amp;gt;= 2.3.1 (Free)&lt;/li&gt;
+  &lt;li&gt;VMware Fusion (Paid)&lt;/li&gt;
+  &lt;li&gt;Vagrant VMware plugin (Paid)&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;1-creating-a-custom-vmware-vagrant-box&quot;&gt;1. Creating a custom VMware Vagrant box&lt;/h2&gt;
+&lt;p&gt;As mentioned above, most of my battle was spent with creating a custom Vagrant Box for VMware. This is why I’m going to try and list as much detail as I possibly can so future VMware Vagranter’s don’t end up losing as much sleep as I did.&lt;/p&gt;
+
+&lt;h3 id=&quot;11-iso-image&quot;&gt;1.1 ISO Image&lt;/h3&gt;
+&lt;p&gt;The custom VMware Vagrant box we’ll be creating is a 64-bit version of Kali 2017.1. You can grab the ISO  &lt;a href=&quot;http://cdimage.kali.org/kali-2017.1/kali-linux-2017.1-amd64.iso&quot;&gt;here&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;There are a number of Kali boxes that exist in &lt;a href=&quot;https://atlas.hashicorp.com/boxes/search&quot;&gt;HashiCorp’s Atlas box catalog&lt;/a&gt;. A couple of reasons I elected to create my own box:&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;For fun - I wanted to learn how to create a Vagrant Box from scratch.&lt;/li&gt;
+  &lt;li&gt;If this box is going to be in real Client environments, I want to know the contents of my box. In other words, I’m not trusting any pre-made boxes.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h3 id=&quot;12-ssh-key-generation&quot;&gt;1.2 SSH key generation&lt;/h3&gt;
+&lt;p&gt;Before creating a virtual instance of Kali we need to create an SSH key so Vagrant can interact with the virtual guest. You can use an existing key if you want, for the purposes of this blog post, I created a new SSH key pair on my host.&lt;/p&gt;
+
+&lt;p&gt;Keep note of the public key.&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ cd ~/.ssh
+$ ssh-keygen
+Generating public/private rsa key pair.
+Enter file in which to save the key (/Users/me/.ssh/id_rsa): vagrant-demo
+$ cat vagrant-demo.pub
+ssh-rsa AAAAB3N...
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;13-creating-the-vmware-virtual-machine&quot;&gt;1.3 Creating the VMware virtual machine&lt;/h3&gt;
+&lt;p&gt;Creating the VM is pretty standard. There are tools which automate this process, such as &lt;a href=&quot;https://www.packer.io/downloads.html&quot;&gt;Packer&lt;/a&gt;. I found Packer works really well when creating a VirtualBox VM, but it struggles with certain things when creating a VM for VMware Fusion.&lt;/p&gt;
+
+&lt;p&gt;As such, I manually built my VM with the following specifications. Try to stick with these creation steps if you want a Vagrant box that has features like network interface selection and shared folder support.&lt;/p&gt;
+
+&lt;p&gt;Create a new VM from image with the assistant:&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;Select the Kali 2017.1 x64 ISO&lt;/li&gt;
+  &lt;li&gt;Operating system: Debian 8.x 64-bit&lt;/li&gt;
+  &lt;li&gt;Customize settings:
+    &lt;ul&gt;
+      &lt;li&gt;Sharing: Enable shared folders&lt;/li&gt;
+      &lt;li&gt;Processors and memory: 2 CPU, 2048 MB of RAM&lt;/li&gt;
+      &lt;li&gt;Network adapter: Share with my Mac (NAT)&lt;/li&gt;
+      &lt;li&gt;Hard disk: 20 GB&lt;/li&gt;
+      &lt;li&gt;USB &amp;amp; Bluetooth: Turn off “Share Bluetooth devices with Linux”&lt;/li&gt;
+      &lt;li&gt;Remove sound card&lt;/li&gt;
+      &lt;li&gt;Remove printer&lt;/li&gt;
+      &lt;li&gt;Remove camera&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Run through the installation process as normal. Once the VM boots into the desktop environment, navigate to the menu bar and click:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Virtual Machine &amp;gt; Install VMware Tools&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;This will mount VMware Tools into the virtual guests CD drive. Run the following:&lt;/p&gt;
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;apt-get update &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; apt-get upgrade -y
+&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;tar -xvf /media/cdrom0/VMwareT&lt;span class=&quot;k&quot;&gt;*&lt;/span&gt; -C /tmp
+&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;cd&lt;/span&gt; /tmp/VMware-tools-distrib/
+&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;./VMware-install.pl
+&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;reboot
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;After the VM has finished rebooting, log in and run the following configuration script as root - replacing the public key with your own.&lt;/p&gt;
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;#!/bin/bash&lt;/span&gt;
+
+&lt;span class=&quot;nv&quot;&gt;publicKey&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;ssh-rsa AAAAB3N...&quot;&lt;/span&gt;
+
+mkdir ~/.ssh
+&lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;${&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;publicKey&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt; &amp;gt; ~/.ssh/authorized_keys
+chmod 700 ~/.ssh
+
+mv /etc/ssh/sshd_config /etc/ssh/sshd_config.bak
+
+cat &amp;gt;/etc/ssh/sshd_config &lt;span class=&quot;sh&quot;&gt;&amp;lt;&amp;lt;EOL
+Port 22
+Protocol 2
+HostKey /etc/ssh/ssh_host_rsa_key
+HostKey /etc/ssh/ssh_host_dsa_key
+HostKey /etc/ssh/ssh_host_ecdsa_key
+HostKey /etc/ssh/ssh_host_ed25519_key
+UsePrivilegeSeparation yes
+KeyRegenerationInterval 3600
+ServerKeyBits 1024
+SyslogFacility AUTH
+LogLevel INFO
+LoginGraceTime 120
+PermitRootLogin without-password
+StrictModes yes
+RSAAuthentication yes
+PubkeyAuthentication yes
+AuthorizedKeysFile	%h/.ssh/authorized_keys
+IgnoreRhosts yes
+RhostsRSAAuthentication no
+HostbasedAuthentication no
+PermitEmptyPasswords no
+ChallengeResponseAuthentication no
+PasswordAuthentication no
+X11Forwarding yes
+X11DisplayOffset 10
+PrintMotd no
+PrintLastLog yes
+TCPKeepAlive yes
+AcceptEnv LANG LC_*
+UsePAM yes
+EOL
+
+&lt;/span&gt;update-rc.d ssh &lt;span class=&quot;nb&quot;&gt;enable
+&lt;/span&gt;service ssh start
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Test SSH connectivity and shut down the virtual machine.&lt;/p&gt;
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;ssh -i ~/.ssh/vagrant-demo root@192.168.156.214
+
+&lt;span class=&quot;gp&quot;&gt;root@kali:~# &lt;/span&gt;poweroff
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;14-convert-a-vmware-vm-to-a-vagrant-box&quot;&gt;1.4 Convert a VMware VM to a Vagrant box&lt;/h3&gt;
+&lt;p&gt;As opposed to VirtualBox, packaging a VMware VM into a Vagrant Box is more of a manual process. Again, &lt;a href=&quot;https://www.packer.io/downloads.html&quot;&gt;Packer&lt;/a&gt; can automate this, but works better for VirtualBox.&lt;/p&gt;
+
+&lt;p&gt;First, ensure that the recently created VM has been powered off. Check again.&lt;/p&gt;
+
+&lt;p&gt;Navigate to the location of the recently created Kali VM and create a file named &lt;code class=&quot;highlighter-rouge&quot;&gt;metadata.json&lt;/code&gt;. This will tell Vagrant what provider this VM is for.&lt;/p&gt;
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;cd&lt;/span&gt; ~/Desktop/kali-2017-1-x64.vmwarevm/
+&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'{&quot;provider&quot;: &quot;vmware_fusion&quot;}'&lt;/span&gt;&amp;gt; metadata.json
+&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;cat metadata.json
+&lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;provider&quot;&lt;/span&gt;: &lt;span class=&quot;s2&quot;&gt;&quot;vmware_fusion&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Next, we are going to reduce the size of the Vagrant box. This will take about five minutes to complete.&lt;/p&gt;
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;cd&lt;/span&gt; ~/Desktop/kali-2017-1-x64.vmwarevm/
+&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;/Applications/VMware&lt;span class=&quot;se&quot;&gt;\ &lt;/span&gt;Fusion.app/Contents/Library/vmware-vdiskmanager -d Virtual&lt;span class=&quot;se&quot;&gt;\ &lt;/span&gt;Disk.vmdk
+  Defragment: 100% &lt;span class=&quot;k&quot;&gt;done&lt;/span&gt;.
+Defragmentation completed successfully.
+&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;/Applications/VMware&lt;span class=&quot;se&quot;&gt;\ &lt;/span&gt;Fusion.app/Contents/Library/vmware-vdiskmanager -k Virtual&lt;span class=&quot;se&quot;&gt;\ &lt;/span&gt;Disk.vmdk
+  Shrink: 100% &lt;span class=&quot;k&quot;&gt;done&lt;/span&gt;.
+Shrink completed successfully.
+&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Lastly, we will compress the contents of the VM into an archive (box) that is readable by Vagrant. This can take about 10 minutes so feel free to grab a coffee.&lt;/p&gt;
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;tar -czvf kali-2017-x64.box ./&lt;span class=&quot;k&quot;&gt;*&lt;/span&gt;
+...
+&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;mv kali-2017-x64.box ~/Desktop/
+&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;cd&lt;/span&gt; ~/Desktop/
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h2 id=&quot;2-vagrant&quot;&gt;2. Vagrant&lt;/h2&gt;
+&lt;p&gt;At this point we no longer need the Kali VM that we created with VMware. Feel free to delete it.&lt;/p&gt;
+
+&lt;p&gt;The first thing we’re going to do is check if the Vagrant VMware plugin has been added. Installation steps for adding this plugin to Vagrant can be found &lt;a href=&quot;https://www.vagrantup.com/docs/vmware/installation.html&quot;&gt;here&lt;/a&gt;.&lt;/p&gt;
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;vagrant plugin list
+vagrant-share &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;1.1.8&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+  - Version Constraint: 1.1.8
+vagrant-vmware-fusion &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;4.0.19&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Next, we’ll add the recently created box into Vagrant. The value supplied to the name parameter can be set to anything you want.&lt;/p&gt;
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;cd&lt;/span&gt; ~/Desktop/
+&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;vagrant box add kali-2017-x64.box --name kali-2017-x64
+&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;vagrant box list
+kali-2017-x64       &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;vmware_fusion, 0&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The box added into Vagrant exists as a base box, this is essentially the “gold image”. Any modifications to a linked clone of this box will not be made to the base box itself.&lt;/p&gt;
+
+&lt;p&gt;Before bringing up a clone of the box, we need to create a couple of directories and make configurations to the Vagrantfile.&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ cd ~/Desktop/
+$ mkdir -p kali-x64/vagrant_data
+$ cd kali-x64/
+$ vagrant init
+$ ls
+Vagrantfile  vagrant_data
+$
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;A Vagrantfile is created once the &lt;code class=&quot;highlighter-rouge&quot;&gt;vagrant init&lt;/code&gt; command is executed. Think of this file as a blank canvas that we can use to configure our cloned Vagrant box.&lt;/p&gt;
+
+&lt;p&gt;Below is a copy of the Vagrantfile that I am using for the kali-2017-x64 box. The &lt;code class=&quot;highlighter-rouge&quot;&gt;config.ssh.private_key_path&lt;/code&gt; will need to be changed to your SSH private key.&lt;/p&gt;
+
+&lt;p&gt;Something else to note is the networking capabilities of this Vagrantfile. Currently, the network interface is configured in NAT mode. If the comment tag is removed from the line that reads &lt;code class=&quot;highlighter-rouge&quot;&gt;v.vmx[&quot;ethernet0.connectiontype&quot;] = &quot;bridged&quot;&lt;/code&gt;, then the Vagrant box will be on the same network as your host system and assigned an IP address by DHCP (assuming that DHCP is enabled on the local network). I have not experimented with &lt;a href=&quot;https://www.vagrantup.com/docs/networking/forwarded_ports.html&quot;&gt;Vagrant port-forwarding configurations&lt;/a&gt; in VMware. I anticipate that these will need to be made in the vmx configuration given the previous issues I have experienced.&lt;/p&gt;
+&lt;div class=&quot;language-ruby highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;# -*- mode: ruby -*-&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;# vi: set ft=ruby :&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;current_dir&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;File&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;dirname&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kp&quot;&gt;__FILE__&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;no&quot;&gt;Vagrant&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;configure&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;2&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;do&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;config&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;config&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;vm&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;box&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;kali-2017-x64&quot;&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;config&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;ssh&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;username&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;root&quot;&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;config&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;ssh&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;private_key_path&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;/Users/me/.ssh/vagrant-demo&quot;&lt;/span&gt;
+
+  &lt;span class=&quot;n&quot;&gt;config&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;vm&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;provider&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;vmware_fusion&quot;&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;do&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;v&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;gui&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;true&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;v&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;vmx&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;memsize&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;2048&quot;&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;v&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;vmx&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;numvcpus&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;2&quot;&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;v&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;vmx&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;displayName&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;Kali 2017.1 x64&quot;&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;v&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;vmx&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;ide1:0.filename&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&quot;&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;v&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;vmx&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;sharedfolder.maxnum&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;1&quot;&lt;/span&gt;
+
+    &lt;span class=&quot;c1&quot;&gt;# shared folders&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;v&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;vmx&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;sharedFolder0.present&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;true&quot;&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;v&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;vmx&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;sharedFolder0.enabled&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;true&quot;&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;v&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;vmx&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;sharedFolder0.readAccess&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;true&quot;&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;v&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;vmx&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;sharedFolder0.writeAccess&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;true&quot;&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;v&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;vmx&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;sharedFolder0.hostPath&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;#{&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;current_dir&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;/vagrant_data&quot;&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;v&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;vmx&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;sharedFolder0.guestName&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;vagrant_data&quot;&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;v&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;vmx&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;sharedFolder0.expiration&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;never&quot;&lt;/span&gt;
+
+    &lt;span class=&quot;c1&quot;&gt;# networking&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;# NAT is enabled if bridged is commented out&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;# v.vmx[&quot;ethernet0.connectiontype&quot;] = &quot;bridged&quot;&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Once the configurations have been made to the Vagrantfile we can &lt;code class=&quot;highlighter-rouge&quot;&gt;vagrant up&lt;/code&gt;. This spins up a linked clone of the kali-2017-x64 Vagrant box. There will be several warnings which are safe to ignore. Including the rather verbose message at the end which reads “&lt;em&gt;Vagrant attempted to execute the capability …&lt;/em&gt;”.&lt;/p&gt;
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;cd&lt;/span&gt; ~/Desktop/kali-x64/
+&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;vagrant up
+Bringing machine &lt;span class=&quot;s1&quot;&gt;'default'&lt;/span&gt; up with &lt;span class=&quot;s1&quot;&gt;'vmware_fusion'&lt;/span&gt; provider...
+&lt;span class=&quot;gp&quot;&gt;==&amp;gt; &lt;/span&gt;default: Cloning VMware VM: &lt;span class=&quot;s1&quot;&gt;'kali-2017-x64'&lt;/span&gt;. This can take some time...
+&lt;span class=&quot;gp&quot;&gt;==&amp;gt; &lt;/span&gt;default: Verifying vmnet devices are healthy...
+&lt;span class=&quot;gp&quot;&gt;==&amp;gt; &lt;/span&gt;default: Preparing network adapters...
+WARNING: The VMX file &lt;span class=&quot;k&quot;&gt;for &lt;/span&gt;this box contains a setting that is automatically overwritten by Vagrant
+WARNING: when started. Vagrant will stop overwriting this setting &lt;span class=&quot;k&quot;&gt;in &lt;/span&gt;an upcoming release which may
+WARNING: prevent proper networking setup. Below is the detected VMX setting:
+WARNING:
+WARNING:   ethernet0.pcislotnumber &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;33&quot;&lt;/span&gt;
+WARNING:
+WARNING: If networking fails to properly configure, it may require this VMX setting. It can be manually
+WARNING: applied via the Vagrantfile:
+WARNING:
+WARNING:   Vagrant.configure&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;2&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;do&lt;/span&gt; |config|
+WARNING:     config.vm.provider :vmare_fusion &lt;span class=&quot;k&quot;&gt;do&lt;/span&gt; |vmware|
+WARNING:       vmware.vmx[&lt;span class=&quot;s2&quot;&gt;&quot;ethernet0.pcislotnumber&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;33&quot;&lt;/span&gt;
+WARNING:     end
+WARNING:   end
+WARNING:
+WARNING: For more information: https://www.vagrantup.com/docs/vmware/boxes.html#vmx-whitelisting
+&lt;span class=&quot;gp&quot;&gt;==&amp;gt; &lt;/span&gt;default: Starting the VMware VM...
+&lt;span class=&quot;gp&quot;&gt;==&amp;gt; &lt;/span&gt;default: Waiting &lt;span class=&quot;k&quot;&gt;for &lt;/span&gt;machine to boot. This may take a few minutes...
+    default: SSH address: 192.168.156.215:22
+    default: SSH username: root
+    default: SSH auth method: private key
+&lt;span class=&quot;gp&quot;&gt;==&amp;gt; &lt;/span&gt;default: Machine booted and ready!
+&lt;span class=&quot;gp&quot;&gt;==&amp;gt; &lt;/span&gt;default: Forwarding ports...
+    default: -- 22 &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&amp;gt; 2222
+&lt;span class=&quot;gp&quot;&gt;==&amp;gt; &lt;/span&gt;default: Configuring network adapters within the VM...
+Vagrant attempted to execute the capability &lt;span class=&quot;s1&quot;&gt;'configure_networks'&lt;/span&gt;
+on the detect guest OS &lt;span class=&quot;s1&quot;&gt;'linux'&lt;/span&gt;, but the guest doesnt
+support that capability. This capability is required &lt;span class=&quot;k&quot;&gt;for &lt;/span&gt;your
+configuration of Vagrant. Please either reconfigure Vagrant to
+avoid this capability or fix the issue by creating the capability.
+&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;After spinning up the kali-2017-x64 Vagrant box, we can &lt;code class=&quot;highlighter-rouge&quot;&gt;vagrant ssh&lt;/code&gt; into it and start interacting with the box. In the example below, we create a testfile in a shared folder from our host that is observable in our Vagrant box.&lt;/p&gt;
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;vagrant ssh
+
+&lt;span class=&quot;gp&quot;&gt;root@kali:~# &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;cd&lt;/span&gt; /mnt/hgfs/vagrant_data/
+&lt;span class=&quot;gp&quot;&gt;root@kali:/mnt/hgfs/vagrant_data# &lt;/span&gt;touch testfile
+&lt;span class=&quot;gp&quot;&gt;root@kali:/mnt/hgfs/vagrant_data# &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;exit
+logout
+&lt;/span&gt;Connection to 192.168.156.215 closed.
+&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;cd &lt;/span&gt;vagrant_data/
+&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;ls
+testfile
+&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;It is also &lt;strong&gt;important&lt;/strong&gt; to take note of the release description for later use. This should be “Kali GNU/Linux Rolling”, but could be different if you’re reading this blog and using another custom operating system build.&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ vagrant ssh
+
+root@kali:~# cat /etc/*release | grep DESC
+DISTRIB_DESCRIPTION=&quot;Kali GNU/Linux Rolling&quot;
+root@kali:~# exit
+logout
+Connection to 192.168.156.215 closed.
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Once the box has been exited the virtual instance is still running.&lt;/p&gt;
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;vagrant global-status  
+id       name    provider      state   directory
+---------------------------------------------------------------------------
+3c18ff0  default vmware_fusion running /Users/me/Desktop/kali-x64
+...
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;We can use &lt;code class=&quot;highlighter-rouge&quot;&gt;vagrant halt&lt;/code&gt; to shut down the VM or &lt;code class=&quot;highlighter-rouge&quot;&gt;vagrant suspend&lt;/code&gt; to suspend the VM. We’ll leave it up and running for now.&lt;/p&gt;
+
+&lt;p&gt;At this point, we have successfully created a custom Vagrant box from a VMware VM!&lt;/p&gt;
+
+&lt;h2 id=&quot;3-chef&quot;&gt;3. Chef&lt;/h2&gt;
+&lt;p&gt;We need to do a little housekeeping before we can start provisioning our Vagrant box with Chef.&lt;/p&gt;
+
+&lt;h3 id=&quot;31-housekeeping&quot;&gt;3.1 Housekeeping&lt;/h3&gt;
+&lt;p&gt;The first thing we’ll need to do is install &lt;a href=&quot;https://downloads.chef.io/chefdk#mac_os_x&quot;&gt;chefdk&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;After that, ensure that Ruby &amp;gt;=2.3.1 is installed on your host. You can use the following instructions if you have the homebrew package manager installed.&lt;/p&gt;
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;brew install rbenv ruby-build
+&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'if which rbenv &amp;gt; /dev/null; then eval &quot;$(rbenv init -)&quot;; fi'&lt;/span&gt; &amp;gt;&amp;gt; ~/.bash_profile
+&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;source&lt;/span&gt; ~/.bash_profile
+&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;rbenv install 2.3.1
+&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;rbenv global 2.3.1
+&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;ruby -v
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;We’re then going to install a couple of Ruby gems, most notably knife-solo which will allow us to install Chef and use Chef to interact with our Vagrant box.&lt;/p&gt;
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;gem install net-ssh -v 3.2.0
+&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;gem install net-ssh knife-solo
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;After knife-solo has been installed, we need to make an edit to &lt;code class=&quot;highlighter-rouge&quot;&gt;/Users/me/.rbenv/versions/2.3.1/lib/ruby/gems/2.3.0/gems/knife-solo-0.5.1/lib/knife-solo/bootstraps/linux.rb&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;We are concerned with the &lt;code class=&quot;highlighter-rouge&quot;&gt;distro&lt;/code&gt; function located on line 70 and want to add the &lt;code class=&quot;highlighter-rouge&quot;&gt;Kali GNU/Linux Rolling&lt;/code&gt; case statement:&lt;/p&gt;
+&lt;div class=&quot;language-ruby highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;distro&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;vi&quot;&gt;@distro&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;vi&quot;&gt;@distro&lt;/span&gt;
+  &lt;span class=&quot;vi&quot;&gt;@distro&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;issue&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;when&lt;/span&gt; &lt;span class=&quot;sr&quot;&gt;%r{Kali GNU/Linux Rolling}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;ss&quot;&gt;:type&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;debianoid_gem&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;when&lt;/span&gt; &lt;span class=&quot;sr&quot;&gt;%r{Debian GNU/Linux [678]}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;ss&quot;&gt;:type&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;x86?&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;?&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;debianoid_omnibus&quot;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;debianoid_gem&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)}&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;when&lt;/span&gt; &lt;span class=&quot;sr&quot;&gt;%r{Debian}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;ss&quot;&gt;:type&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;debianoid_gem&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;when&lt;/span&gt; &lt;span class=&quot;sr&quot;&gt;%r{Raspbian}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;ss&quot;&gt;:type&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;debianoid_gem&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;when&lt;/span&gt; &lt;span class=&quot;sr&quot;&gt;%r{Linux Mint}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;This will tell knife-solo to treat a release that has the description “Kali GNU/Linux Rolling” as Debian.&lt;/p&gt;
+
+&lt;p&gt;That should wrap up all of the housekeeping steps.&lt;/p&gt;
+
+&lt;h3 id=&quot;32-creating-chef-cookbooks&quot;&gt;3.2 Creating Chef cookbooks&lt;/h3&gt;
+&lt;p&gt;I’m going to preface this section by saying that I am relatively new to Chef and could be doing this completely wrong. Please correct me if you think I can do this better. From my understanding, the organization of Chef kitchens is similar to the following:&lt;/p&gt;
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;chef-kitchen
+&lt;span class=&quot;gp&quot;&gt;-&amp;gt; &lt;/span&gt;cookbooks
+  -&amp;gt; cookbook_for_updates
+    -&amp;gt; recipe
+  -&amp;gt; cookbook_for_git_repos
+    -&amp;gt; recipe
+  -&amp;gt; cookbook_for_system_configs
+    -&amp;gt; recipe
+  -&amp;gt; cookbook_for_xyz
+    -&amp;gt; recipe
+&lt;span class=&quot;gp&quot;&gt;-&amp;gt; &lt;/span&gt;nodes
+  -&amp;gt; 192.168.1.1
+    -&amp;gt; recipe[cookbook_for_updates, cookbook_for_system_configs]
+  -&amp;gt; 192.168.1.2
+    -&amp;gt; recipe[cookbook_for_updates, cookbook_for_git_repos, cookbook_for_system_configs, cookbook_for_xyz]
+  -&amp;gt; 192.168.1.13
+    -&amp;gt; recipe[cookbook_for_system_configs, cookbook_for_xyz]
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;We’ll navigate back to our Vagrant kali-x64 directory and create a Chef kitchen named kali_kitchen.&lt;/p&gt;
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;cd&lt;/span&gt; ~/Desktop/kali-x64/
+&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;knife solo init kali_kitchen
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;We’ll then create a cookbook within this kitchen called system_configurations/&lt;/p&gt;
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;cd &lt;/span&gt;kali_kitchen/cookbooks
+&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;chef generate cookbook system_configurations
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Within the kali_kitchen, we can specify nodes, which in our case are Vagrant boxes, that will receive cookbooks created in this kitchen. Additionally, these nodes can receive some cookbooks or all of the cookbooks. The choice is yours.&lt;/p&gt;
+
+&lt;p&gt;Next, we’ll create a recipe for the the system_configurations cookbook. This takes place by editing the &lt;code class=&quot;highlighter-rouge&quot;&gt;default.rb&lt;/code&gt; file for the system_configurations cookbook. In the example below, we create a directory named “tools” and create a “bash_aliases” file.&lt;/p&gt;
+
+&lt;div class=&quot;language-ruby highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;cat&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;system_configurations&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;recipes&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;default&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;rb&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;#&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;# Cookbook:: system_configurations&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;# Recipe:: default&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;#&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;# Copyright:: 2017, Sanjiv Kawa, All Rights Reserved.&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;directory&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'/tools/'&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;do&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;owner&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'root'&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;group&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'root'&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;mode&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'0755'&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;action&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;:create&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;ret&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;aliases&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;alias c='clear'&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ret&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+&lt;span class=&quot;s2&quot;&gt;&quot;alias cdd='cd /Users/root/Desktop'&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ret&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+&lt;span class=&quot;s2&quot;&gt;&quot;alias grip=&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;grep -Eo &lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\'&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;[0-9]{1,3}&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;.[0-9]{1,3}&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;.[0-9]{1,3}&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;.[0-9]{1,3}&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\'\&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ret&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+&lt;span class=&quot;s2&quot;&gt;&quot;alias l='ls -hal'&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ret&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+&lt;span class=&quot;s2&quot;&gt;&quot;alias sau='sort | uniq'&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ret&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;file&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;/root/.bash_aliases&quot;&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;do&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;content&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;aliases&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;script&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;system_configurations&quot;&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;do&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;interpreter&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;bash&quot;&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;code&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&amp;lt;-&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;EOH&lt;/span&gt;&lt;span class=&quot;sh&quot;&gt;
+    echo 'set completion-ignore-case On' &amp;gt;&amp;gt; ~/.inputrc
+    source /root/.bashrc
+&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;    EOH&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;33-provisioning-vagrant-boxes-with-chef&quot;&gt;3.3 Provisioning Vagrant boxes with Chef&lt;/h3&gt;
+&lt;p&gt;Once changes have been made to our system_configurations cookbook, we’ll navigate back to our Chef kitchen in the Vagrant kali-x64 directory and prepare the Vagrant box. This will do several things such as, install the Chef client on the Vagrant box and make it a member node of our kali_kitchen.&lt;/p&gt;
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;cd&lt;/span&gt; ~/Desktop/kali-x64/kali_kitchen
+&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;knife solo prepare --identity-file ~/.ssh/vagrant-demo root@192.168.156.215
+Bootstrapping Chef...
+Updating apt caches...
+Installing required packages...
+Installing rubygems from source...
+Generating node config &lt;span class=&quot;s1&quot;&gt;'nodes/192.168.156.215.json'&lt;/span&gt;...
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;As seen above, our Vagrant box is now part of kali_kitchen. We can now apply the system_configurations cookbook to the Vagrant box by editing the node’s &lt;code class=&quot;highlighter-rouge&quot;&gt;run_list&lt;/code&gt;. This node will now receive the system_configurations recipe, previously defined in the &lt;code class=&quot;highlighter-rouge&quot;&gt;default.rb&lt;/code&gt; file.&lt;/p&gt;
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;cat nodes/192.168.156.215.json
+&lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+  &lt;span class=&quot;s2&quot;&gt;&quot;run_list&quot;&lt;/span&gt;: &lt;span class=&quot;o&quot;&gt;[&lt;/span&gt;
+    &lt;span class=&quot;s2&quot;&gt;&quot;recipe[system_configurations]&quot;&lt;/span&gt;
+  &lt;span class=&quot;o&quot;&gt;]&lt;/span&gt;,
+  &lt;span class=&quot;s2&quot;&gt;&quot;automatic&quot;&lt;/span&gt;: &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;s2&quot;&gt;&quot;ipaddress&quot;&lt;/span&gt;: &lt;span class=&quot;s2&quot;&gt;&quot;192.168.156.215&quot;&lt;/span&gt;
+  &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;After editing the &lt;code class=&quot;highlighter-rouge&quot;&gt;run_list&lt;/code&gt; node configuration, we can “cook” the recipe on our Vagrant box.&lt;/p&gt;
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;cd&lt;/span&gt; ~/Desktop/kali-x64/kali_kitchen
+&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;knife solo cook --identity-file ~/.ssh/vagrant-demo root@192.168.156.215
+Running Chef on 192.168.156.215...
+Uploading the kitchen...
+Generating solo config...
+Running Chef: sudo chef-solo -c ~/chef-solo/solo.rb -j ~/chef-solo/dna.json
+Starting Chef Client, version 13.0.118
+resolving cookbooks &lt;span class=&quot;k&quot;&gt;for &lt;/span&gt;run list: &lt;span class=&quot;o&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;system_configurations&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;]&lt;/span&gt;
+Synchronizing Cookbooks:
+  - system_configurations &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;0.1.0&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+Installing Cookbook Gems:
+Compiling Cookbooks...
+Converging 3 resources
+Recipe: system_configurations::default
+  &lt;span class=&quot;k&quot;&gt;*&lt;/span&gt; directory[/tools/] action create
+  - create new directory /tools/
+  - change mode from &lt;span class=&quot;s1&quot;&gt;''&lt;/span&gt; to &lt;span class=&quot;s1&quot;&gt;'0755'&lt;/span&gt;
+  - change owner from &lt;span class=&quot;s1&quot;&gt;''&lt;/span&gt; to &lt;span class=&quot;s1&quot;&gt;'root'&lt;/span&gt;
+  - change group from &lt;span class=&quot;s1&quot;&gt;''&lt;/span&gt; to &lt;span class=&quot;s1&quot;&gt;'root'&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;*&lt;/span&gt; file[/root/.bash_aliases] action create &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;up to date&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;*&lt;/span&gt; script[system_configurations] action run
+    - execute &lt;span class=&quot;s2&quot;&gt;&quot;bash&quot;&lt;/span&gt;  &lt;span class=&quot;s2&quot;&gt;&quot;/tmp/chef-script20170515-10727-op1gwo&quot;&lt;/span&gt;
+
+Running handlers:
+Running handlers &lt;span class=&quot;nb&quot;&gt;complete
+&lt;/span&gt;Chef Client finished, 1/3 resources updated &lt;span class=&quot;k&quot;&gt;in &lt;/span&gt;02 seconds
+&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Our Vagrant box has now had various system configurations applied to it via Chef.&lt;/p&gt;
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gp&quot;&gt;root@kali:~# &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;alias
+alias &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'clear'&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;alias &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;cdd&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'cd /Users/root/Desktop'&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;alias &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;grip&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'grep -Eo '&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}'&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;''&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;alias &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;l&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'ls -hal'&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;alias &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;ls&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'ls --color=auto'&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;alias &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;sau&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'sort | uniq'&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;alias &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;search&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'reset; grep -H'&lt;/span&gt;
+&lt;span class=&quot;gp&quot;&gt;root@kali:~# &lt;/span&gt;ls / | grep -i too
+tools
+root@kali:~#
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;34-other-cookbook-thoughts&quot;&gt;3.4 Other cookbook thoughts&lt;/h3&gt;
+&lt;p&gt;I have some cookbook ideas and over time will be adding them to &lt;a href=&quot;https://github.com/skahwah/chef&quot;&gt;my GitHub page&lt;/a&gt;. This will be things like:&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;A cookbook containing all of the tools I frequently use, this will download the tools into the /tools directory then install them&lt;/li&gt;
+  &lt;li&gt;A cookbook for updates and upgrades that runs periodically&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;4-staying-clean-with-vagrant-and-chef&quot;&gt;4. Staying clean with Vagrant and Chef&lt;/h2&gt;
+&lt;p&gt;All of this seems like a lot of work, but once your base box is created and your Chef cookbooks have been made, it’s really easy to rapidly provision systems prior to the start of an engagement. In addition, small Vagrant files result in your penetration testing environment becoming a lot smaller and the introduction of cookbooks make it completely portable.&lt;/p&gt;
+
+&lt;p&gt;Let’s create a scenario. It’s Friday, you’ve collected all of your evidence and the pen-testing gig you were on to is now over. You can rip down your entire Vagrant environment with a single command:&lt;/p&gt;
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gp&quot;&gt;root@kali:~# &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;exit
+logout
+&lt;/span&gt;Connection to 192.168.156.215 closed.
+&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;vagrant destroy
+    default: Are you sure you want to destroy the &lt;span class=&quot;s1&quot;&gt;'default'&lt;/span&gt; VM? &lt;span class=&quot;o&quot;&gt;[&lt;/span&gt;y/N] y
+&lt;span class=&quot;gp&quot;&gt;==&amp;gt; &lt;/span&gt;default: Stopping the VMware VM...
+&lt;span class=&quot;gp&quot;&gt;==&amp;gt; &lt;/span&gt;default: Deleting the VM...
+&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;You can also delete any files you have copied into to your shared directory to ensure that there will be no cross-contamination or stray Client files:&lt;/p&gt;
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;rm -rf vagrant_data &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; mkdir vagrant_data
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Monday comes around and you need a fresh environment for new pen-testing gig. This can be achieved in a just a couple of commands:&lt;/p&gt;
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;vagrant up
+&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;knife solo prepare --identity-file ~/.ssh/vagrant-demo root@192.168.156.214
+&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;cd &lt;/span&gt;kali_kitchen
+&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;vim nodes/192.168.156.214.json
+&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;knife solo cook --identity-file ~/.ssh/vagrant-demo root@192.168.156.214
+&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;vagrant ssh
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;</content><author><name>Sanjiv Kawa</name></author><category term="Vagrant" /><category term="Chef" /><category term="Kali" /><category term="Penetration Testing" /><category term="VMware" /><category term="Packer" /><summary type="html">Intro I’ve recently been thinking about the most effective way to sanitize my pen-testing VM’s prior to the start of a new engagement. Reason being, pen-testing VM’s can be quite unsanitary if neglected.</summary></entry><entry><title type="html">SLAE Assignment 5 - msfvenom Shellcode Analysis</title><link href="http://localhost:4000/SLAE-Assignment-5/" rel="alternate" type="text/html" title="SLAE Assignment 5 - msfvenom Shellcode Analysis" /><published>2016-12-07T22:40:00-05:00</published><updated>2016-12-07T22:40:00-05:00</updated><id>http://localhost:4000/SLAE-Assignment-5</id><content type="html" xml:base="http://localhost:4000/SLAE-Assignment-5/">&lt;h3 id=&quot;slae-assignment-stub&quot;&gt;SLAE Assignment Stub&lt;/h3&gt;
 &lt;p&gt;This blog post has been created for completing the requirements of the SecurityTube Linux Assembly Expert certification.&lt;/p&gt;
 
 &lt;p&gt;&lt;a href=&quot;http://www.securitytube-training.com/online-courses/securitytube-linux-assembly-expert/&quot;&gt;http://www.securitytube-training.com/online-courses/securitytube-linux-assembly-expert/&lt;/a&gt;&lt;/p&gt;
@@ -376,7 +974,7 @@ skawa@ubuntu:~/libemu/tools/sctest&lt;span class=&quot;err&quot;&gt;$&lt;/span&g
 &lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;al&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x3&lt;/span&gt;          &lt;span class=&quot;c&quot;&gt;;read syscall&lt;/span&gt;
 &lt;span class=&quot;k&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x80&lt;/span&gt;            &lt;span class=&quot;c&quot;&gt;;execute read&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;</content><author><name>Sanjiv Kawa</name></author><category term="SLAE" /><category term="SecurityTube" /><category term="Assignment" /><category term="Shellcode" /><category term="nasm" /><category term="assembly" /><category term="msfvenom" /><summary type="html">SLAE Assignment Stub This blog post has been created for completing the requirements of the SecurityTube Linux Assembly Expert certification.</summary></entry><entry><title type="html">SLAE Assignment 7 - Crypters</title><link href="http://localhost:4000/SLAE-Assignment-7/" rel="alternate" type="text/html" title="SLAE Assignment 7 - Crypters" /><published>2016-12-07T17:40:00-07:00</published><updated>2016-12-07T17:40:00-07:00</updated><id>http://localhost:4000/SLAE-Assignment-7</id><content type="html" xml:base="http://localhost:4000/SLAE-Assignment-7/">&lt;h3 id=&quot;slae-assignment-stub&quot;&gt;SLAE Assignment Stub&lt;/h3&gt;
+&lt;/div&gt;</content><author><name>Sanjiv Kawa</name></author><category term="SLAE" /><category term="SecurityTube" /><category term="Assignment" /><category term="Shellcode" /><category term="nasm" /><category term="assembly" /><category term="msfvenom" /><summary type="html">SLAE Assignment Stub This blog post has been created for completing the requirements of the SecurityTube Linux Assembly Expert certification.</summary></entry><entry><title type="html">SLAE Assignment 7 - Crypters</title><link href="http://localhost:4000/SLAE-Assignment-7/" rel="alternate" type="text/html" title="SLAE Assignment 7 - Crypters" /><published>2016-12-07T19:40:00-05:00</published><updated>2016-12-07T19:40:00-05:00</updated><id>http://localhost:4000/SLAE-Assignment-7</id><content type="html" xml:base="http://localhost:4000/SLAE-Assignment-7/">&lt;h3 id=&quot;slae-assignment-stub&quot;&gt;SLAE Assignment Stub&lt;/h3&gt;
 &lt;p&gt;This blog post has been created for completing the requirements of the SecurityTube Linux Assembly Expert certification.&lt;/p&gt;
 
 &lt;p&gt;&lt;a href=&quot;http://www.securitytube-training.com/online-courses/securitytube-linux-assembly-expert/&quot;&gt;http://www.securitytube-training.com/online-courses/securitytube-linux-assembly-expert/&lt;/a&gt;&lt;/p&gt;
@@ -729,7 +1327,7 @@ Compile: gcc -fno-stack-protector -z execstack decrypt.c -l crypto -o decrypt
 
 &lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;</content><author><name>Sanjiv Kawa</name></author><category term="SLAE" /><category term="SecurityTube" /><category term="Assignment" /><category term="Shellcode" /><category term="nasm" /><category term="assembly" /><category term="crypter" /><summary type="html">SLAE Assignment Stub This blog post has been created for completing the requirements of the SecurityTube Linux Assembly Expert certification.</summary></entry><entry><title type="html">SLAE Assignment 6 - Polymorphic Shells</title><link href="http://localhost:4000/SLAE-Assignment-6/" rel="alternate" type="text/html" title="SLAE Assignment 6 - Polymorphic Shells" /><published>2016-12-06T20:35:00-07:00</published><updated>2016-12-06T20:35:00-07:00</updated><id>http://localhost:4000/SLAE-Assignment-6</id><content type="html" xml:base="http://localhost:4000/SLAE-Assignment-6/">&lt;h3 id=&quot;slae-assignment-stub&quot;&gt;SLAE Assignment Stub&lt;/h3&gt;
+&lt;/div&gt;</content><author><name>Sanjiv Kawa</name></author><category term="SLAE" /><category term="SecurityTube" /><category term="Assignment" /><category term="Shellcode" /><category term="nasm" /><category term="assembly" /><category term="crypter" /><summary type="html">SLAE Assignment Stub This blog post has been created for completing the requirements of the SecurityTube Linux Assembly Expert certification.</summary></entry><entry><title type="html">SLAE Assignment 6 - Polymorphic Shells</title><link href="http://localhost:4000/SLAE-Assignment-6/" rel="alternate" type="text/html" title="SLAE Assignment 6 - Polymorphic Shells" /><published>2016-12-06T22:35:00-05:00</published><updated>2016-12-06T22:35:00-05:00</updated><id>http://localhost:4000/SLAE-Assignment-6</id><content type="html" xml:base="http://localhost:4000/SLAE-Assignment-6/">&lt;h3 id=&quot;slae-assignment-stub&quot;&gt;SLAE Assignment Stub&lt;/h3&gt;
 &lt;p&gt;This blog post has been created for completing the requirements of the SecurityTube Linux Assembly Expert certification.&lt;/p&gt;
 
 &lt;p&gt;&lt;a href=&quot;http://www.securitytube-training.com/online-courses/securitytube-linux-assembly-expert/&quot;&gt;http://www.securitytube-training.com/online-courses/securitytube-linux-assembly-expert/&lt;/a&gt;&lt;/p&gt;
@@ -1324,7 +1922,7 @@ skawa@ubuntu:~/Desktop/code/assignment/assignment6&lt;span class=&quot;err&quot;
 
 &lt;p&gt;After comparing the state of the general purpose registers and values on the stack in both the original shellcode and the polymorphic shellcode, it is evident that all replaced instructions are semantically equivalent and the functionality of the original shellcode is preserved.&lt;/p&gt;
 
-&lt;p&gt;In addition, the size of the original shellcode is 21 bytes. The size of the polymorphic shellcode is 29 bytes, meeting the size restrictions set by SecurityTube.&lt;/p&gt;</content><author><name>Sanjiv Kawa</name></author><category term="SLAE" /><category term="SecurityTube" /><category term="Assignment" /><category term="Shellcode" /><category term="nasm" /><category term="assembly" /><category term="polymorphic shells" /><summary type="html">SLAE Assignment Stub This blog post has been created for completing the requirements of the SecurityTube Linux Assembly Expert certification.</summary></entry><entry><title type="html">SLAE Assignment 2 - Reverse TCP Shell</title><link href="http://localhost:4000/SLAE-Assignment-2/" rel="alternate" type="text/html" title="SLAE Assignment 2 - Reverse TCP Shell" /><published>2016-12-06T08:25:00-07:00</published><updated>2016-12-06T08:25:00-07:00</updated><id>http://localhost:4000/SLAE-Assignment-2</id><content type="html" xml:base="http://localhost:4000/SLAE-Assignment-2/">&lt;h3 id=&quot;slae-assignment-stub&quot;&gt;SLAE Assignment Stub&lt;/h3&gt;
+&lt;p&gt;In addition, the size of the original shellcode is 21 bytes. The size of the polymorphic shellcode is 29 bytes, meeting the size restrictions set by SecurityTube.&lt;/p&gt;</content><author><name>Sanjiv Kawa</name></author><category term="SLAE" /><category term="SecurityTube" /><category term="Assignment" /><category term="Shellcode" /><category term="nasm" /><category term="assembly" /><category term="polymorphic shells" /><summary type="html">SLAE Assignment Stub This blog post has been created for completing the requirements of the SecurityTube Linux Assembly Expert certification.</summary></entry><entry><title type="html">SLAE Assignment 2 - Reverse TCP Shell</title><link href="http://localhost:4000/SLAE-Assignment-2/" rel="alternate" type="text/html" title="SLAE Assignment 2 - Reverse TCP Shell" /><published>2016-12-06T10:25:00-05:00</published><updated>2016-12-06T10:25:00-05:00</updated><id>http://localhost:4000/SLAE-Assignment-2</id><content type="html" xml:base="http://localhost:4000/SLAE-Assignment-2/">&lt;h3 id=&quot;slae-assignment-stub&quot;&gt;SLAE Assignment Stub&lt;/h3&gt;
 &lt;p&gt;This blog post has been created for completing the requirements of the SecurityTube Linux Assembly Expert certification.&lt;/p&gt;
 
 &lt;p&gt;&lt;a href=&quot;http://www.securitytube-training.com/online-courses/securitytube-linux-assembly-expert/&quot;&gt;http://www.securitytube-training.com/online-courses/securitytube-linux-assembly-expert/&lt;/a&gt;&lt;/p&gt;
@@ -1702,7 +2300,7 @@ skawa
 &lt;/code&gt;&lt;/pre&gt;
 &lt;/div&gt;
 
-&lt;p&gt;The converted network information can then be placed into the &lt;code class=&quot;highlighter-rouge&quot;&gt;IP&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;PORT&lt;/code&gt; variables in the &lt;code class=&quot;highlighter-rouge&quot;&gt;C&lt;/code&gt; shellcode wrapper. This can be found &lt;a href=&quot;https://github.com/skahwah/slae/blob/master/assignment2/shellcode-reverse.c&quot;&gt;here&lt;/a&gt;.&lt;/p&gt;</content><author><name>Sanjiv Kawa</name></author><category term="SLAE" /><category term="SecurityTube" /><category term="Assignment" /><category term="Shellcode" /><category term="nasm" /><category term="assembly" /><category term="reverse shell" /><summary type="html">SLAE Assignment Stub This blog post has been created for completing the requirements of the SecurityTube Linux Assembly Expert certification.</summary></entry><entry><title type="html">SLAE Assignment 1 - Bind TCP Shell</title><link href="http://localhost:4000/SLAE-Assignment-1/" rel="alternate" type="text/html" title="SLAE Assignment 1 - Bind TCP Shell" /><published>2016-12-05T18:40:00-07:00</published><updated>2016-12-05T18:40:00-07:00</updated><id>http://localhost:4000/SLAE-Assignment-1</id><content type="html" xml:base="http://localhost:4000/SLAE-Assignment-1/">&lt;h3 id=&quot;slae-assignment-stub&quot;&gt;SLAE Assignment Stub&lt;/h3&gt;
+&lt;p&gt;The converted network information can then be placed into the &lt;code class=&quot;highlighter-rouge&quot;&gt;IP&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;PORT&lt;/code&gt; variables in the &lt;code class=&quot;highlighter-rouge&quot;&gt;C&lt;/code&gt; shellcode wrapper. This can be found &lt;a href=&quot;https://github.com/skahwah/slae/blob/master/assignment2/shellcode-reverse.c&quot;&gt;here&lt;/a&gt;.&lt;/p&gt;</content><author><name>Sanjiv Kawa</name></author><category term="SLAE" /><category term="SecurityTube" /><category term="Assignment" /><category term="Shellcode" /><category term="nasm" /><category term="assembly" /><category term="reverse shell" /><summary type="html">SLAE Assignment Stub This blog post has been created for completing the requirements of the SecurityTube Linux Assembly Expert certification.</summary></entry><entry><title type="html">SLAE Assignment 1 - Bind TCP Shell</title><link href="http://localhost:4000/SLAE-Assignment-1/" rel="alternate" type="text/html" title="SLAE Assignment 1 - Bind TCP Shell" /><published>2016-12-05T20:40:00-05:00</published><updated>2016-12-05T20:40:00-05:00</updated><id>http://localhost:4000/SLAE-Assignment-1</id><content type="html" xml:base="http://localhost:4000/SLAE-Assignment-1/">&lt;h3 id=&quot;slae-assignment-stub&quot;&gt;SLAE Assignment Stub&lt;/h3&gt;
 &lt;p&gt;This blog post has been created for completing the requirements of the SecurityTube Linux Assembly Expert certification.&lt;/p&gt;
 
 &lt;p&gt;&lt;a href=&quot;http://www.securitytube-training.com/online-courses/securitytube-linux-assembly-expert/&quot;&gt;http://www.securitytube-training.com/online-courses/securitytube-linux-assembly-expert/&lt;/a&gt;&lt;/p&gt;
@@ -2173,7 +2771,7 @@ skawa
 &lt;/code&gt;&lt;/pre&gt;
 &lt;/div&gt;
 
-&lt;p&gt;The converted network port can then be placed into the &lt;code class=&quot;highlighter-rouge&quot;&gt;PORT&lt;/code&gt; variable of the &lt;code class=&quot;highlighter-rouge&quot;&gt;C&lt;/code&gt; shellcode wrapper. This can be found &lt;a href=&quot;https://github.com/skahwah/slae/blob/master/assignment1/shellcode-bind.c&quot;&gt;here&lt;/a&gt;.&lt;/p&gt;</content><author><name>Sanjiv Kawa</name></author><category term="SLAE" /><category term="SecurityTube" /><category term="Assignment" /><category term="Shellcode" /><category term="nasm" /><category term="assembly" /><category term="bind shell" /><summary type="html">SLAE Assignment Stub This blog post has been created for completing the requirements of the SecurityTube Linux Assembly Expert certification.</summary></entry><entry><title type="html">SLAE Assignment 3 - Egg Hunter</title><link href="http://localhost:4000/SLAE-Assignment-3/" rel="alternate" type="text/html" title="SLAE Assignment 3 - Egg Hunter" /><published>2016-12-04T16:10:00-07:00</published><updated>2016-12-04T16:10:00-07:00</updated><id>http://localhost:4000/SLAE-Assignment-3</id><content type="html" xml:base="http://localhost:4000/SLAE-Assignment-3/">&lt;h3 id=&quot;slae-assignment-stub&quot;&gt;SLAE Assignment Stub&lt;/h3&gt;
+&lt;p&gt;The converted network port can then be placed into the &lt;code class=&quot;highlighter-rouge&quot;&gt;PORT&lt;/code&gt; variable of the &lt;code class=&quot;highlighter-rouge&quot;&gt;C&lt;/code&gt; shellcode wrapper. This can be found &lt;a href=&quot;https://github.com/skahwah/slae/blob/master/assignment1/shellcode-bind.c&quot;&gt;here&lt;/a&gt;.&lt;/p&gt;</content><author><name>Sanjiv Kawa</name></author><category term="SLAE" /><category term="SecurityTube" /><category term="Assignment" /><category term="Shellcode" /><category term="nasm" /><category term="assembly" /><category term="bind shell" /><summary type="html">SLAE Assignment Stub This blog post has been created for completing the requirements of the SecurityTube Linux Assembly Expert certification.</summary></entry><entry><title type="html">SLAE Assignment 3 - Egg Hunter</title><link href="http://localhost:4000/SLAE-Assignment-3/" rel="alternate" type="text/html" title="SLAE Assignment 3 - Egg Hunter" /><published>2016-12-04T18:10:00-05:00</published><updated>2016-12-04T18:10:00-05:00</updated><id>http://localhost:4000/SLAE-Assignment-3</id><content type="html" xml:base="http://localhost:4000/SLAE-Assignment-3/">&lt;h3 id=&quot;slae-assignment-stub&quot;&gt;SLAE Assignment Stub&lt;/h3&gt;
 &lt;p&gt;This blog post has been created for completing the requirements of the SecurityTube Linux Assembly Expert certification.&lt;/p&gt;
 
 &lt;p&gt;&lt;a href=&quot;http://www.securitytube-training.com/online-courses/securitytube-linux-assembly-expert/&quot;&gt;http://www.securitytube-training.com/online-courses/securitytube-linux-assembly-expert/&lt;/a&gt;&lt;/p&gt;
@@ -2962,7 +3560,7 @@ unsigned char egg_hunter[] &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;sp
 &lt;span class=&quot;n&quot;&gt;Error&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;re&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;setting&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;breakpoint&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;No&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;symbol&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;table&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;is&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;loaded&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;  &lt;span class=&quot;n&quot;&gt;Use&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;the&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;file&quot;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;command&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;
 &lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;</content><author><name>Sanjiv Kawa</name></author><category term="SLAE" /><category term="SecurityTube" /><category term="Assignment" /><category term="Shellcode" /><category term="nasm" /><category term="assembly" /><category term="egg hunter" /><category term="access syscall" /><summary type="html">SLAE Assignment Stub This blog post has been created for completing the requirements of the SecurityTube Linux Assembly Expert certification.</summary></entry><entry><title type="html">SLAE Assignment 4 - Custom Encoder</title><link href="http://localhost:4000/SLAE-Assignment-4/" rel="alternate" type="text/html" title="SLAE Assignment 4 - Custom Encoder" /><published>2016-12-02T19:30:00-07:00</published><updated>2016-12-02T19:30:00-07:00</updated><id>http://localhost:4000/SLAE-Assignment-4</id><content type="html" xml:base="http://localhost:4000/SLAE-Assignment-4/">&lt;h3 id=&quot;slae-assignment-stub&quot;&gt;SLAE Assignment Stub&lt;/h3&gt;
+&lt;/div&gt;</content><author><name>Sanjiv Kawa</name></author><category term="SLAE" /><category term="SecurityTube" /><category term="Assignment" /><category term="Shellcode" /><category term="nasm" /><category term="assembly" /><category term="egg hunter" /><category term="access syscall" /><summary type="html">SLAE Assignment Stub This blog post has been created for completing the requirements of the SecurityTube Linux Assembly Expert certification.</summary></entry><entry><title type="html">SLAE Assignment 4 - Custom Encoder</title><link href="http://localhost:4000/SLAE-Assignment-4/" rel="alternate" type="text/html" title="SLAE Assignment 4 - Custom Encoder" /><published>2016-12-02T21:30:00-05:00</published><updated>2016-12-02T21:30:00-05:00</updated><id>http://localhost:4000/SLAE-Assignment-4</id><content type="html" xml:base="http://localhost:4000/SLAE-Assignment-4/">&lt;h3 id=&quot;slae-assignment-stub&quot;&gt;SLAE Assignment Stub&lt;/h3&gt;
 &lt;p&gt;This blog post has been created for completing the requirements of the SecurityTube Linux Assembly Expert certification.&lt;/p&gt;
 
 &lt;p&gt;&lt;a href=&quot;http://www.securitytube-training.com/online-courses/securitytube-linux-assembly-expert/&quot;&gt;http://www.securitytube-training.com/online-courses/securitytube-linux-assembly-expert/&lt;/a&gt;&lt;/p&gt;
@@ -3255,7 +3853,7 @@ Shellcode Length: 62
 &lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;exit
 &lt;/span&gt;skawa@ubuntu:~/Desktop/code/assignment/assignment4&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;</content><author><name>Sanjiv Kawa</name></author><category term="SLAE" /><category term="SecurityTube" /><category term="Assignment" /><category term="Shellcode" /><category term="nasm" /><category term="assembly" /><category term="ruby" /><category term="encoder" /><category term="decoder" /><summary type="html">SLAE Assignment Stub This blog post has been created for completing the requirements of the SecurityTube Linux Assembly Expert certification.</summary></entry><entry><title type="html">/bin/sh execve Stack</title><link href="http://localhost:4000/execve-stack/" rel="alternate" type="text/html" title="/bin/sh execve Stack" /><published>2016-12-02T17:15:00-07:00</published><updated>2016-12-02T17:15:00-07:00</updated><id>http://localhost:4000/execve-stack</id><content type="html" xml:base="http://localhost:4000/execve-stack/">&lt;h3 id=&quot;the-execve-syscall&quot;&gt;The execve SYSCALL&lt;/h3&gt;
+&lt;/div&gt;</content><author><name>Sanjiv Kawa</name></author><category term="SLAE" /><category term="SecurityTube" /><category term="Assignment" /><category term="Shellcode" /><category term="nasm" /><category term="assembly" /><category term="ruby" /><category term="encoder" /><category term="decoder" /><summary type="html">SLAE Assignment Stub This blog post has been created for completing the requirements of the SecurityTube Linux Assembly Expert certification.</summary></entry><entry><title type="html">/bin/sh execve Stack</title><link href="http://localhost:4000/execve-stack/" rel="alternate" type="text/html" title="/bin/sh execve Stack" /><published>2016-12-02T19:15:00-05:00</published><updated>2016-12-02T19:15:00-05:00</updated><id>http://localhost:4000/execve-stack</id><content type="html" xml:base="http://localhost:4000/execve-stack/">&lt;h3 id=&quot;the-execve-syscall&quot;&gt;The execve SYSCALL&lt;/h3&gt;
 &lt;p&gt;A useful SYSCALL that can help with executing a shell is &lt;code class=&quot;highlighter-rouge&quot;&gt;execve&lt;/code&gt;.&lt;/p&gt;
 
 &lt;p&gt;Looking at the man page for &lt;code class=&quot;highlighter-rouge&quot;&gt;execve&lt;/code&gt;, there are three main arguments.&lt;/p&gt;
@@ -3345,147 +3943,4 @@ Shellcode Length: 25
 &lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;exit
 &lt;/span&gt;skawa@ubuntu:~/Desktop/code/execve&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;</content><author><name>Sanjiv Kawa</name></author><category term="Stack" /><category term="Shellcode" /><category term="nasm" /><category term="assembly" /><category term="execve" /><summary type="html">The execve SYSCALL A useful SYSCALL that can help with executing a shell is execve.</summary></entry><entry><title type="html">Wordsmith</title><link href="http://localhost:4000/wordsmith/" rel="alternate" type="text/html" title="Wordsmith" /><published>2016-10-10T00:00:00-06:00</published><updated>2016-10-10T00:00:00-06:00</updated><id>http://localhost:4000/wordsmith</id><content type="html" xml:base="http://localhost:4000/wordsmith/">&lt;p&gt;Standard wordlists such as Uniq and Rockyou are great when used with a variety of hashcat rules and big hash sets. But what about the hashes that you aren’t able to crack? And what about smaller hash sets from smaller targets?&lt;/p&gt;
-
-&lt;p&gt;Queue Wordsmith, a tool that creates wordlists that are tailored to the target. Based on the target’s U.S. State, Wordsmith creates geo-location based wordlists that contains the names of cities, landmarks, roads, sports teams, zip codes, area codes, popular names and more. Generated wordlists can be used by themselves or as a supplement to other wordlists for brute force attacks or hash cracking.&lt;/p&gt;
-
-&lt;iframe width=&quot;560&quot; height=&quot;315&quot; src=&quot;//www.youtube.com/embed/q2hbc34gVnI&quot; frameborder=&quot;0&quot;&gt; &lt;/iframe&gt;
-
-&lt;p&gt;&lt;a href=&quot;http://www.slideshare.net/SanjivKawa/crafting-tailored-wordlists-with-wordsmith&quot;&gt;BSides LV 2016 PowerPoint&lt;/a&gt;&lt;/p&gt;
-
-&lt;p&gt;&lt;a href=&quot;https://github.com/skahwah/wordsmith&quot;&gt;Download&lt;/a&gt;&lt;/p&gt;</content><author><name></name></author><category term="wordsmith" /><category term="github" /><category term="sanjiv kawa" /><category term="tom porter" /><summary type="html">Generate geo-location based wordlists</summary></entry><entry><title type="html">Setting up BloodHound on Debian Jessie</title><link href="http://localhost:4000/setting-up-bloodhound-on-debian-jessie/" rel="alternate" type="text/html" title="Setting up BloodHound on Debian Jessie" /><published>2016-10-06T11:57:00-06:00</published><updated>2016-10-06T11:57:00-06:00</updated><id>http://localhost:4000/setting-up-bloodhound-on-debian-jessie</id><content type="html" xml:base="http://localhost:4000/setting-up-bloodhound-on-debian-jessie/">&lt;p&gt;Every year I usually flag some tools that I want to try when I get back home from hacker summer camp. Things end up getting hectic, life and work takes over, and a year later, my reminders auto-delete rules remove all traces of what was once recorded.&lt;/p&gt;
-
-&lt;p&gt;Well not this year, I stuck to my guns and have been cycling through my list of “really cool tools to try”.&lt;/p&gt;
-
-&lt;p&gt;I remember catching a bit of the BloodHound talk when I was presenting Wordsmith at BSides LV, and being quite excited to try it out.&lt;/p&gt;
-
-&lt;p&gt;To my surprise there isn’t a good, concise guide to get BloodHound up and running on Debian. So here is what I was able to cobble together.&lt;/p&gt;
-
-&lt;p&gt;This should take about 15 minutes to install and configure.&lt;/p&gt;
-
-&lt;p&gt;First thing to do is sudo up.&lt;/p&gt;
-
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-css&quot; data-lang=&quot;css&quot;&gt;&lt;span class=&quot;nt&quot;&gt;su&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;root&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
-
-&lt;p&gt;Install some packages that will be necessary to grab BloodHound.&lt;/p&gt;
-
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-css&quot; data-lang=&quot;css&quot;&gt;&lt;span class=&quot;nt&quot;&gt;apt-get&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;update&lt;/span&gt;
-&lt;span class=&quot;nt&quot;&gt;apt-get&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;install&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;git&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;wget&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;curl&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
-
-&lt;p&gt;Add the neo4j sources.&lt;/p&gt;
-
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-css&quot; data-lang=&quot;css&quot;&gt;&lt;span class=&quot;nt&quot;&gt;wget&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-O&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;https&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;://&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;debian&lt;/span&gt;&lt;span class=&quot;nc&quot;&gt;.neo4j.org&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;neotechnology&lt;/span&gt;&lt;span class=&quot;nc&quot;&gt;.gpg.key&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;sudo&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;apt-key&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;add&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-&lt;/span&gt;
-&lt;span class=&quot;nt&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;'deb http://debian.neo4j.org/repo stable/'&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;sudo&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;tee&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;etc&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;apt&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;sources&lt;/span&gt;&lt;span class=&quot;nc&quot;&gt;.list.d&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;neo4j&lt;/span&gt;&lt;span class=&quot;nc&quot;&gt;.list&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
-
-&lt;p&gt;Add the openjdk 8 sources.&lt;/p&gt;
-
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-css&quot; data-lang=&quot;css&quot;&gt;&lt;span class=&quot;nt&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&quot;deb http://httpredir.debian.org/debian jessie-backports main&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;sudo&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;tee&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-a&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;etc&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;apt&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;sources&lt;/span&gt;&lt;span class=&quot;nc&quot;&gt;.list.d&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;jessie-backports&lt;/span&gt;&lt;span class=&quot;nc&quot;&gt;.list&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
-
-&lt;p&gt;Install openjdk 8.&lt;/p&gt;
-
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-css&quot; data-lang=&quot;css&quot;&gt;&lt;span class=&quot;nt&quot;&gt;apt-get&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;update&lt;/span&gt;
-&lt;span class=&quot;nt&quot;&gt;apt-get&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;install&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;openjdk-8-jdk&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;openjdk-8-jre&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
-
-&lt;p&gt;This is &lt;strong&gt;really&lt;/strong&gt; important, neo4j will run into a start up error unless the the default Java version is set to Java 8.&lt;/p&gt;
-
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-css&quot; data-lang=&quot;css&quot;&gt;&lt;span class=&quot;nt&quot;&gt;root&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;@seeker&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;~#&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;java&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;-version&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;java&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;version&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&quot;1.7.0_111&quot;&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;OpenJDK&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Runtime&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Environment&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;IcedTea&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;2.6.7&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;7&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;u111-2&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;.6.7-1&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;~&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;deb8u1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;OpenJDK&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Client&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;VM&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;build&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;24.111&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;-b01&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;mixed&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;mode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;sharing&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;root&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;seeker&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;~#&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;update-alternatives&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;--config&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;java&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;There&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;are&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;2&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;choices&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;the&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;alternative&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;java&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;providing&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;usr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bin&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;java&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;
-
-  &lt;span class=&quot;n&quot;&gt;Selection&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;Path&lt;/span&gt;                                           &lt;span class=&quot;n&quot;&gt;Priority&lt;/span&gt;   &lt;span class=&quot;n&quot;&gt;Status&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;------------------------------------------------------------&lt;/span&gt;
-&lt;span class=&quot;err&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;0&lt;/span&gt;            &lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;usr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;lib&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;jvm&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;java-7-openjdk-i386&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;jre&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bin&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;java&lt;/span&gt;   &lt;span class=&quot;m&quot;&gt;1071&lt;/span&gt;      &lt;span class=&quot;nb&quot;&gt;auto&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;mode&lt;/span&gt;
-  &lt;span class=&quot;m&quot;&gt;1&lt;/span&gt;            &lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;usr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;lib&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;jvm&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;java-7-openjdk-i386&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;jre&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bin&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;java&lt;/span&gt;   &lt;span class=&quot;m&quot;&gt;1071&lt;/span&gt;      &lt;span class=&quot;n&quot;&gt;manual&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;mode&lt;/span&gt;
-  &lt;span class=&quot;m&quot;&gt;2&lt;/span&gt;            &lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;usr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;lib&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;jvm&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;java-8-openjdk-i386&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;jre&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bin&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;java&lt;/span&gt;   &lt;span class=&quot;m&quot;&gt;1069&lt;/span&gt;      &lt;span class=&quot;n&quot;&gt;manual&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;mode&lt;/span&gt;
-
-&lt;span class=&quot;n&quot;&gt;Press&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;enter&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;to&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;keep&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;the&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;current&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;choice&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;or&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;type&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;selection&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;number&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;2&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;update-alternatives&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;using&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;usr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;lib&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;jvm&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;java-8-openjdk-i386&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;jre&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bin&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;java&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;to&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;provide&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;usr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bin&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;java&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;java&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;manual&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;mode&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;root&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;seeker&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;~#&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;java&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;-version&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;openjdk&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;version&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&quot;1.8.0_102&quot;&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;OpenJDK&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Runtime&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Environment&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;build&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;1.8.0&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_102-8u102-b14&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;.1-1&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;~&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bpo8&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;-b14&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;OpenJDK&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Server&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;VM&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;build&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;25.102&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;-b14&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;mixed&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;mode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;root&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;seeker&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;~#&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
-
-&lt;p&gt;Install neo4j.&lt;/p&gt;
-
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-css&quot; data-lang=&quot;css&quot;&gt;&lt;span class=&quot;nt&quot;&gt;apt-get&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;install&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;neo4j&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
-
-&lt;p&gt;Edit the neo4j configuration file to listen for bolt and http on all interfaces (you can set 0.0.0.0 to 127.0.0.1 if you plan on using BloodHound for test only). Also also set the default graph database to graph.db.&lt;/p&gt;
-
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-css&quot; data-lang=&quot;css&quot;&gt;&lt;span class=&quot;nt&quot;&gt;root&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;@seeker&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;~#&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&quot;dbms.active_database=graph.db&quot;&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;etc&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;neo4j&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;neo4j&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;conf&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;root&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;seeker&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;~#&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&quot;dbms.connector.http.address=0.0.0.0:7474&quot;&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;etc&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;neo4j&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;neo4j&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;conf&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;root&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;seeker&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;~#&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&quot;dbms.connector.bolt.address=0.0.0.0:7687&quot;&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;etc&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;neo4j&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;neo4j&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;conf&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;root&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;seeker&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;~#&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tail&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;etc&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;neo4j&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;neo4j&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;conf&lt;/span&gt;
-&lt;span class=&quot;err&quot;&gt;#&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Directory&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;settings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;dbms&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;directories&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;logs&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;var&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;neo4j&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;dbms&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;directories&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;run&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;var&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;run&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;neo4j&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;dbms&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;directories&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;lib&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;usr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;share&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;neo4j&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;lib&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;dbms&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;directories&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;certificates&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;var&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;lib&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;neo4j&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;certificates&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;dbms&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;active_database&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;graph&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;db&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;dbms&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;connector&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;http&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;address&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;0.0.0.0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;7474&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;dbms&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;connector&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bolt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;address&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;0.0.0.0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;7687&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;root&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;seeker&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;~#&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
-
-&lt;p&gt;The next step is to clone the Bloodhound git repository. This is just so we can extract the sample database. Once we place this into the appropriate location, we can delete the git repository.&lt;/p&gt;
-
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-css&quot; data-lang=&quot;css&quot;&gt;&lt;span class=&quot;nt&quot;&gt;git&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;clone&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;https&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;://&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;github&lt;/span&gt;&lt;span class=&quot;nc&quot;&gt;.com&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;adaptivethreat&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;BloodHound&lt;/span&gt;&lt;span class=&quot;nc&quot;&gt;.git&lt;/span&gt;
-&lt;span class=&quot;nt&quot;&gt;cd&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;BloodHound&lt;/span&gt;
-&lt;span class=&quot;nt&quot;&gt;cp&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-R&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;var&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;lib&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;neo4j&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;data&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;databases&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;graph&lt;/span&gt;&lt;span class=&quot;nc&quot;&gt;.db&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;var&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;lib&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;neo4j&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;data&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;databases&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;graph&lt;/span&gt;&lt;span class=&quot;nc&quot;&gt;.db.bak&lt;/span&gt;
-&lt;span class=&quot;nt&quot;&gt;cp&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-R&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;BloodHoundExampleDB&lt;/span&gt;&lt;span class=&quot;nc&quot;&gt;.graphdb&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/*&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;var&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;lib&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;neo4j&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;data&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;databases&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;graph&lt;/span&gt;&lt;span class=&quot;nc&quot;&gt;.db&lt;/span&gt;
-&lt;span class=&quot;nt&quot;&gt;cd&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;..&lt;/span&gt;
-&lt;span class=&quot;nt&quot;&gt;rm&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-rf&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;BloodHound&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
-
-&lt;p&gt;Restart neo4j.&lt;/p&gt;
-
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-css&quot; data-lang=&quot;css&quot;&gt;&lt;span class=&quot;nt&quot;&gt;neo4j&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;restart&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
-
-&lt;p&gt;Download the Bloodhound binary, but don’t execute it just yet.&lt;/p&gt;
-
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-css&quot; data-lang=&quot;css&quot;&gt;&lt;span class=&quot;nt&quot;&gt;wget&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;https&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;://&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;github&lt;/span&gt;&lt;span class=&quot;nc&quot;&gt;.com&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;adaptivethreat&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;BloodHound&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;releases&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;download&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;v1&lt;/span&gt;&lt;span class=&quot;nc&quot;&gt;.1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;BloodHound-linux-ia32&lt;/span&gt;&lt;span class=&quot;nc&quot;&gt;.zip&lt;/span&gt;
-&lt;span class=&quot;nt&quot;&gt;unzip&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;BloodHound-linux-ia32&lt;/span&gt;&lt;span class=&quot;nc&quot;&gt;.zip&lt;/span&gt;
-&lt;span class=&quot;nt&quot;&gt;rm&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;BloodHound-linux-ia32&lt;/span&gt;&lt;span class=&quot;nc&quot;&gt;.zip&lt;/span&gt;
-&lt;span class=&quot;nt&quot;&gt;cd&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;BloodHound-linux-ia32&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;
-&lt;span class=&quot;nt&quot;&gt;sudo&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;chmod&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;x&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;BloodHound&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
-
-&lt;p&gt;Before executing BloodHound, we have to set a new password for the neo4j instance.&lt;/p&gt;
-
-&lt;p&gt;Open a web browser and navigate to &lt;code class=&quot;highlighter-rouge&quot;&gt;http://yourDebianIp:7474&lt;/code&gt;&lt;/p&gt;
-
-&lt;figure&gt;
-  &lt;center&gt;
-    &lt;img src=&quot;https://3.bp.blogspot.com/-eG3pGa7suBY/V_aOwBuTrZI/AAAAAAAACNs/VZi9pHR4iZEMHzCxEtDsV-sOgnJtkKjUQCLcB/s400/1.png&quot; /&gt;
-    &lt;figurecaption&gt;Log in as: neo4j/neo4j&lt;/figurecaption&gt;
-  &lt;/center&gt;
-&lt;figure&gt;
-&lt;br /&gt;&lt;br /&gt;
-&lt;figure&gt;
-  &lt;center&gt;
-    &lt;img src=&quot;https://4.bp.blogspot.com/-kSxFkThI2Sw/V_aOwKTVv3I/AAAAAAAACNk/vS3shpnhc7s5zmK_VKLfn1_gw6J9sgEIQCEw/s1600/2.png&quot; /&gt;
-    &lt;figurecaption&gt;Set new password.&lt;/figurecaption&gt;
-  &lt;/center&gt;
-&lt;figure&gt;
-&lt;br /&gt;&lt;br /&gt;
-After setting a new password, feel free to close your browser and move back into your Debian instance to execute the BloodHound binary.
-
-&lt;figure&gt;
-  &lt;center&gt;
-    &lt;img src=&quot;https://1.bp.blogspot.com/-A8_LGW_Fvhc/V_aOweRnoLI/AAAAAAAACNw/J7fSo6ORs3YO3jVK2-ip_ItDjFjj-q6sQCEw/s400/4.png&quot; /&gt;s
-    &lt;figurecaption&gt;This will launch the BloodHound native application. Set the database URL to: bolt://localhost:7687 and the database username and password to neo4j/yourNewPass&lt;/figurecaption&gt;
-  &lt;/center&gt;
-&lt;figure&gt;
-&lt;br /&gt;&lt;br /&gt;
-&lt;figure&gt;
-  &lt;center&gt;
-    &lt;img src=&quot;https://3.bp.blogspot.com/-SI0UXGzGazo/V_aOw1jLibI/AAAAAAAACN4/OX9VWLoN1kg0rv7s60RO6ooQ1H2pVN4lACEw/s400/5.png&quot; /&gt;
-  &lt;/center&gt;
-&lt;figure&gt;
-&lt;br /&gt;&lt;br /&gt;
-&lt;figure&gt;
-  &lt;center&gt;
-    &lt;img src=&quot;https://1.bp.blogspot.com/-9SwCp3r5B7U/V_aOwpr9qPI/AAAAAAAACN0/LH_8DbBGHisiW6U_t4AtZ9h3wVkOZbQsgCEw/s400/6.png&quot; /&gt;
-  &lt;/center&gt;
-&lt;figure&gt;
-&lt;/figure&gt;&lt;/figure&gt;&lt;/figure&gt;&lt;/figure&gt;&lt;/figure&gt;&lt;/figure&gt;&lt;/figure&gt;&lt;/figure&gt;&lt;/figure&gt;&lt;/figure&gt;</content><author><name>Sanjiv Kawa</name></author><category term="Debian" /><category term="Java" /><category term="graph" /><category term="neo4j" /><category term="BloodHound" /><category term="openjdk" /><summary type="html">Every year I usually flag some tools that I want to try when I get back home from hacker summer camp. Things end up getting hectic, life and work takes over, and a year later, my reminders auto-delete rules remove all traces of what was once recorded.</summary></entry></feed>
+&lt;/div&gt;</content><author><name>Sanjiv Kawa</name></author><category term="Stack" /><category term="Shellcode" /><category term="nasm" /><category term="assembly" /><category term="execve" /><summary type="html">The execve SYSCALL A useful SYSCALL that can help with executing a shell is execve.</summary></entry></feed>

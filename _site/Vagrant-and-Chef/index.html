@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]><html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]--><!--[if (IE 7)&!(IEMobile)]><html class="no-js lt-ie9 lt-ie8"><![endif]--><!--[if (IE 8)&!(IEMobile)]><html class="no-js lt-ie9"><![endif]--><!--[if gt IE 8]><!--><html class="no-js">
+<!--<![endif]--> <head> <meta charset="UTF-8"> <meta content="text/html; charset=UTF-8" http-equiv="Content-Type"> <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"> <title>Staying clean with Vagrant and Chef – popped.io</title> <meta name="description" content="A collection of my security research, random projects and attempts to amuse."> <meta name="keywords" content="Vagrant, Chef, Kali, Penetration Testing, VMware, Packer"> <!-- Twitter Cards --> <meta name="twitter:card" content="summary"> <meta name="twitter:image" content="http://localhost:4000/assets/img/me.png"> <meta name="twitter:title" content="Staying clean with Vagrant and Chef"> <meta name="twitter:description" content="IntroI’ve recently been thinking about the most effective way to sanitize my pen-testing VM’s prior to the start of a new engagement. Reason being, pen-testing VM’s can be quite unsanitary if neglected."> <meta name="twitter:site" content="@hackerjiv"> <meta name="twitter:creator" content="@hackerjiv"> <!-- Open Graph --> <meta property="og:locale" content="en_US"> <meta property="og:type" content="article"> <meta property="og:title" content="Staying clean with Vagrant and Chef"> <meta property="og:description" content="IntroI’ve recently been thinking about the most effective way to sanitize my pen-testing VM’s prior to the start of a new engagement. Reason being, pen-testing VM’s can be quite unsanitary if neglected."> <meta property="og:url" content="http://localhost:4000/Vagrant-and-Chef/"> <meta property="og:site_name" content="popped.io"> <meta property="og:image" content="http://localhost:4000/assets/img/me.png"> <link rel="canonical" href="http://localhost:4000/Vagrant-and-Chef/"> <link href="http://localhost:4000/feed.xml" type="application/atom+xml" rel="alternate" title="popped.io Feed"> <!-- Handheld --> <meta name="HandheldFriendly" content="True"> <meta name="MobileOptimized" content="320"> <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- CSS --> <link rel="stylesheet" href="http://localhost:4000/assets/css/main.css"> <!-- JS --> <script src="http://localhost:4000/assets/js/modernizr-3.3.1.custom.min.js"></script> <!-- Favicons --> <link rel="apple-touch-icon" href="http://localhost:4000/assets/img/favicons/apple-icon-precomposed.png"> <link rel="apple-touch-icon" sizes="72x72" href="http://localhost:4000/assets/img/favicons/apple-icon-72x72.png"> <link rel="apple-touch-icon" sizes="114x114" href="http://localhost:4000/assets/img/favicons/apple-icon-114x114.png"> <link rel="apple-touch-icon" sizes="144x144" href="http://localhost:4000/assets/img/favicons/apple-icon-144x144.png"> <link rel="shortcut icon" type="image/png" href="http://localhost:4000/favicon.png"> <link rel="shortcut icon" href="http://localhost:4000/favicon.ico"> <!-- Background Image --> <style type="text/css">body {background-image:url(http://localhost:4000/assets/img/placeholder-big.jpg); background-repeat: no-repeat; background-size: cover; }</style> <!-- Post Feature Image --> <!-- Begin Jekyll SEO tag v2.2.3 --> <title>Staying clean with Vagrant and Chef | popped.io</title> <meta property="og:title" content="Staying clean with Vagrant and Chef"> <meta name="author" content="Sanjiv Kawa"> <meta property="og:locale" content="en_US"> <meta name="description" content="Intro I’ve recently been thinking about the most effective way to sanitize my pen-testing VM’s prior to the start of a new engagement. Reason being, pen-testing VM’s can be quite unsanitary if neglected."> <meta property="og:description" content="Intro I’ve recently been thinking about the most effective way to sanitize my pen-testing VM’s prior to the start of a new engagement. Reason being, pen-testing VM’s can be quite unsanitary if neglected."> <link rel="canonical" href="http://localhost:4000/Vagrant-and-Chef/"> <meta property="og:url" content="http://localhost:4000/Vagrant-and-Chef/"> <meta property="og:site_name" content="popped.io"> <meta property="og:type" content="article"> <meta property="article:published_time" content="2017-05-15T20:05:00-04:00"> <meta name="twitter:card" content="summary"> <meta name="twitter:site" content="@"> <meta name="twitter:creator" content="@Sanjiv Kawa"> <script type="application/ld+json"> {"@context":"http://schema.org","@type":"BlogPosting","headline":"Staying clean with Vagrant and Chef","author":{"@type":"Person","name":"Sanjiv Kawa"},"datePublished":"2017-05-15T20:05:00-04:00","dateModified":"2017-05-15T20:05:00-04:00","description":"Intro I’ve recently been thinking about the most effective way to sanitize my pen-testing VM’s prior to the start of a new engagement. Reason being, pen-testing VM’s can be quite unsanitary if neglected.","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","url":"http://localhost:4000/assets/img/me.png"},"name":"Sanjiv Kawa"},"mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/Vagrant-and-Chef/"},"url":"http://localhost:4000/Vagrant-and-Chef/"}</script> <!-- End Jekyll SEO tag --> </head> <body> <nav id="dl-menu" class="dl-menuwrapper" role="navigation"> <button class="dl-trigger">Open Menu</button> <ul class="dl-menu"> <li><a href="http://localhost:4000/">Home</a></li> <li> <a href="#">About</a> <ul class="dl-submenu"> <li> <img src="http://localhost:4000/assets/img/me.png" alt="popped.io photo" class="author-photo"> <h4>popped.io</h4> <p>A collection of my security research, random projects and attempts to amuse.</p> </li> <li><a href="http://localhost:4000/about/"><span class="btn btn-inverse">Learn More</span></a></li> <li> <a href="mailto:sanjiv@popped.io" target="_blank" rel="noopener noreferrer"><i class="fa fa-fw fa-envelope-square"></i> Email</a> </li> <li> <a href="http://twitter.com/hackerjiv" target="_blank" rel="noopener noreferrer"><i class="fa fa-fw fa-twitter-square"></i> Twitter</a> </li> <li> <a href="http://linkedin.com/in/sanjivkawa" target="_blank" rel="noopener noreferrer"><i class="fa fa-fw fa-linkedin-square"></i> LinkedIn</a> </li> <li> <a href="http://github.com/skahwah" target="_blank" rel="noopener noreferrer"><i class="fa fa-fw fa-github"></i> Github</a> </li> </ul>
+<!-- /.dl-submenu --> </li> <li> <a href="#">Posts</a> <ul class="dl-submenu"> <li><a href="http://localhost:4000/posts/">All Posts</a></li> <li><a href="http://localhost:4000/tags/">All Tags</a></li> </ul> </li> <li><a href="http://localhost:4000/projects/">Projects</a></li> </ul>
+<!-- /.dl-menu --> </nav><!-- /.dl-menuwrapper --> <!-- Header --> <header class="header" role="banner"> <div class="wrapper animated fadeIn"> <div class="content"> <div class="post-title "> <h1>Staying clean with Vagrant and Chef</h1> <h4>15 May 2017</h4> <p class="reading-time"> <i class="fa fa-clock-o"></i> Reading time ~16 minutes </p>
+<!-- /.entry-reading-time --> <a class="btn zoombtn" href="http://localhost:4000/posts/"> <i class="fa fa-chevron-left"></i> </a> </div> <h2 id="intro">Intro</h2> <p>I’ve recently been thinking about the most effective way to sanitize my pen-testing VM’s prior to the start of a new engagement. Reason being, pen-testing VM’s can be quite unsanitary if neglected.</p> <p><img style="float: center;" src="https://raw.githubusercontent.com/skahwah/skahwah.github.io/master/_data/wash-hands.jpg"></p> <p>After the execution of most tools, confidential Client related data is stored in unknown/random locations, log files, or hidden directories. A good example of this are commands that are kept in history files that could contain credentials, asset information, or console output from Client systems.</p> <p>My paranoia has only further been fueled by recent conference talks with the premise of blue team hunting the red team.</p> <p>Up until now, I’ve been reverting to previous VM snapshots of “gold images” that are pre-configured with my preferred system configurations and tools. This is really effective, in the sense that it ensures that residual data from one pentest does not get introduced into the network for another pentest. However, it’s not the most efficient in terms of manageability, and it also doesn’t allow for dynamic changes such as the introduction of new tools or system and software updates.</p> <p>As such, I’ve taken a page out of the DevOps playbook on virtual machine provisioning in my quest to create a safe, hygienic pen-testing environment.</p> <h3 id="main-menu">Main menu</h3> <p>In this blog post you will learn how to:</p> <ul> <li>Create a custom Vagrant base box for VMware</li> <li>Configure things like shared folders and bridged/NAT interfaces</li> <li>Modify system configurations and install packages via Chef</li> <li>Using Vagrant and Chef to create a sanitary pen-testing environment</li> </ul> <h3 id="a-word-before-we-start">A word before we start</h3> <p>This blog post will largely be centered around paid tools, such as VMware Fusion and the Vagrant VMware plugin.</p> <p>There are lots of existing blog posts that cover creating custom Vagrant boxes and provisioning them for VirtualBox, but surprisingly a handful of scattered sources for VMware.</p> <p>Also, as I started playing more with VMware custom box creation, it became apparent that a lot of the native Vagrantfile configurations are geared for VirtualBox and not VMware. As such, I’ve made some creative hacks in the Vagrantfile to accommodate for the lack of native support. We’ll get into this later, but for now, one example is:</p> <p>Vagrant says to use the following configuration in the Vagrantfile to sync a folder from the virtual host to the virtual guest.</p> <div class="language-ruby highlighter-rouge"><pre class="highlight"><code><span class="n">config</span><span class="p">.</span><span class="nf">vm</span><span class="p">.</span><span class="nf">synced_folder</span> <span class="s2">"vagrant_data/"</span><span class="p">,</span> <span class="s2">"/home/vagrant_data"</span>
+</code></pre></div> <p>Well, this simply does not work when you are trying to create a custom box for VMware. Instead, I discovered that you can make direct modifications to the VMware vmx file and introduce folder sharing like this:</p> <div class="language-ruby highlighter-rouge"><pre class="highlight"><code><span class="n">config</span><span class="p">.</span><span class="nf">vm</span><span class="p">.</span><span class="nf">provider</span> <span class="s2">"vmware_fusion"</span> <span class="k">do</span> <span class="o">|</span><span class="n">v</span><span class="o">|</span>
+<span class="p">.</span><span class="nf">.</span><span class="p">.</span>
+  <span class="nf">v</span><span class="p">.</span><span class="nf">vmx</span><span class="p">[</span><span class="s2">"sharedFolder0.present"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"true"</span>
+  <span class="n">v</span><span class="p">.</span><span class="nf">vmx</span><span class="p">[</span><span class="s2">"sharedFolder0.enabled"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"true"</span>
+  <span class="n">v</span><span class="p">.</span><span class="nf">vmx</span><span class="p">[</span><span class="s2">"sharedFolder0.readAccess"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"true"</span>
+  <span class="n">v</span><span class="p">.</span><span class="nf">vmx</span><span class="p">[</span><span class="s2">"sharedFolder0.writeAccess"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"true"</span>
+  <span class="n">v</span><span class="p">.</span><span class="nf">vmx</span><span class="p">[</span><span class="s2">"sharedFolder0.hostPath"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"</span><span class="si">#{</span><span class="n">current_dir</span><span class="si">}</span><span class="s2">/vagrant_data"</span>
+  <span class="n">v</span><span class="p">.</span><span class="nf">vmx</span><span class="p">[</span><span class="s2">"sharedFolder0.guestName"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"vagrant_data"</span>
+  <span class="n">v</span><span class="p">.</span><span class="nf">vmx</span><span class="p">[</span><span class="s2">"sharedFolder0.expiration"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"never"</span>
+<span class="p">.</span><span class="nf">.</span><span class="o">.</span>
+</code></pre></div> <h3 id="requirements">Requirements</h3> <p>Here are some of the tools that you’ll need to follow along:</p> <ul> <li>Vagrant (Free)</li> <li>chefdk (Free)</li> <li>knife-solo (Free)</li> <li>Ruby &gt;= 2.3.1 (Free)</li> <li>VMware Fusion (Paid)</li> <li>Vagrant VMware plugin (Paid)</li> </ul> <h2 id="1-creating-a-custom-vmware-vagrant-box">1. Creating a custom VMware Vagrant box</h2> <p>As mentioned above, most of my battle was spent with creating a custom Vagrant Box for VMware. This is why I’m going to try and list as much detail as I possibly can so future VMware Vagranter’s don’t end up losing as much sleep as I did.</p> <h3 id="11-iso-image">1.1 ISO Image</h3> <p>The custom VMware Vagrant box we’ll be creating is a 64-bit version of Kali 2017.1. You can grab the ISO <a href="http://cdimage.kali.org/kali-2017.1/kali-linux-2017.1-amd64.iso">here</a>.</p> <p>There are a number of Kali boxes that exist in <a href="https://atlas.hashicorp.com/boxes/search">HashiCorp’s Atlas box catalog</a>. A couple of reasons I elected to create my own box:</p> <ol> <li>For fun - I wanted to learn how to create a Vagrant Box from scratch.</li> <li>If this box is going to be in real Client environments, I want to know the contents of my box. In other words, I’m not trusting any pre-made boxes.</li> </ol> <h3 id="12-ssh-key-generation">1.2 SSH key generation</h3> <p>Before creating a virtual instance of Kali we need to create an SSH key so Vagrant can interact with the virtual guest. You can use an existing key if you want, for the purposes of this blog post, I created a new SSH key pair on my host.</p> <p>Keep note of the public key.</p> <div class="highlighter-rouge"><pre class="highlight"><code>$ cd ~/.ssh
+$ ssh-keygen
+Generating public/private rsa key pair.
+Enter file in which to save the key (/Users/me/.ssh/id_rsa): vagrant-demo
+$ cat vagrant-demo.pub
+ssh-rsa AAAAB3N...
+</code></pre></div> <h3 id="13-creating-the-vmware-virtual-machine">1.3 Creating the VMware virtual machine</h3> <p>Creating the VM is pretty standard. There are tools which automate this process, such as <a href="https://www.packer.io/downloads.html">Packer</a>. I found Packer works really well when creating a VirtualBox VM, but it struggles with certain things when creating a VM for VMware Fusion.</p> <p>As such, I manually built my VM with the following specifications. Try to stick with these creation steps if you want a Vagrant box that has features like network interface selection and shared folder support.</p> <p>Create a new VM from image with the assistant:</p> <ul> <li>Select the Kali 2017.1 x64 ISO</li> <li>Operating system: Debian 8.x 64-bit</li> <li>Customize settings: <ul> <li>Sharing: Enable shared folders</li> <li>Processors and memory: 2 CPU, 2048 MB of RAM</li> <li>Network adapter: Share with my Mac (NAT)</li> <li>Hard disk: 20 GB</li> <li>USB &amp; Bluetooth: Turn off “Share Bluetooth devices with Linux”</li> <li>Remove sound card</li> <li>Remove printer</li> <li>Remove camera</li> </ul> </li> </ul> <p>Run through the installation process as normal. Once the VM boots into the desktop environment, navigate to the menu bar and click:</p> <ul> <li>Virtual Machine &gt; Install VMware Tools</li> </ul> <p>This will mount VMware Tools into the virtual guests CD drive. Run the following:</p> <div class="language-shell highlighter-rouge"><pre class="highlight"><code><span class="gp">$ </span>apt-get update <span class="o">&amp;&amp;</span> apt-get upgrade -y
+<span class="gp">$ </span>tar -xvf /media/cdrom0/VMwareT<span class="k">*</span> -C /tmp
+<span class="gp">$ </span><span class="nb">cd</span> /tmp/VMware-tools-distrib/
+<span class="gp">$ </span>./VMware-install.pl
+<span class="gp">$ </span>reboot
+</code></pre></div> <p>After the VM has finished rebooting, log in and run the following configuration script as root - replacing the public key with your own.</p> <div class="language-shell highlighter-rouge"><pre class="highlight"><code><span class="c">#!/bin/bash</span>
+
+<span class="nv">publicKey</span><span class="o">=</span><span class="s2">"ssh-rsa AAAAB3N..."</span>
+
+mkdir ~/.ssh
+<span class="nb">echo</span> <span class="s2">"</span><span class="k">${</span><span class="nv">publicKey</span><span class="k">}</span><span class="s2">"</span> &gt; ~/.ssh/authorized_keys
+chmod 700 ~/.ssh
+
+mv /etc/ssh/sshd_config /etc/ssh/sshd_config.bak
+
+cat &gt;/etc/ssh/sshd_config <span class="sh">&lt;&lt;EOL
+Port 22
+Protocol 2
+HostKey /etc/ssh/ssh_host_rsa_key
+HostKey /etc/ssh/ssh_host_dsa_key
+HostKey /etc/ssh/ssh_host_ecdsa_key
+HostKey /etc/ssh/ssh_host_ed25519_key
+UsePrivilegeSeparation yes
+KeyRegenerationInterval 3600
+ServerKeyBits 1024
+SyslogFacility AUTH
+LogLevel INFO
+LoginGraceTime 120
+PermitRootLogin without-password
+StrictModes yes
+RSAAuthentication yes
+PubkeyAuthentication yes
+AuthorizedKeysFile	%h/.ssh/authorized_keys
+IgnoreRhosts yes
+RhostsRSAAuthentication no
+HostbasedAuthentication no
+PermitEmptyPasswords no
+ChallengeResponseAuthentication no
+PasswordAuthentication no
+X11Forwarding yes
+X11DisplayOffset 10
+PrintMotd no
+PrintLastLog yes
+TCPKeepAlive yes
+AcceptEnv LANG LC_*
+UsePAM yes
+EOL
+
+</span>update-rc.d ssh <span class="nb">enable
+</span>service ssh start
+</code></pre></div> <p>Test SSH connectivity and shut down the virtual machine.</p> <div class="language-shell highlighter-rouge"><pre class="highlight"><code><span class="gp">$ </span>ssh -i ~/.ssh/vagrant-demo root@192.168.156.214
+
+<span class="gp">root@kali:~# </span>poweroff
+</code></pre></div> <h3 id="14-convert-a-vmware-vm-to-a-vagrant-box">1.4 Convert a VMware VM to a Vagrant box</h3> <p>As opposed to VirtualBox, packaging a VMware VM into a Vagrant Box is more of a manual process. Again, <a href="https://www.packer.io/downloads.html">Packer</a> can automate this, but works better for VirtualBox.</p> <p>First, ensure that the recently created VM has been powered off. Check again.</p> <p>Navigate to the location of the recently created Kali VM and create a file named <code class="highlighter-rouge">metadata.json</code>. This will tell Vagrant what provider this VM is for.</p> <div class="language-shell highlighter-rouge"><pre class="highlight"><code><span class="gp">$ </span><span class="nb">cd</span> ~/Desktop/kali-2017-1-x64.vmwarevm/
+<span class="gp">$ </span><span class="nb">echo</span> <span class="s1">'{"provider": "vmware_fusion"}'</span>&gt; metadata.json
+<span class="gp">$ </span>cat metadata.json
+<span class="o">{</span><span class="s2">"provider"</span>: <span class="s2">"vmware_fusion"</span><span class="o">}</span>
+<span class="err">$</span>
+</code></pre></div> <p>Next, we are going to reduce the size of the Vagrant box. This will take about five minutes to complete.</p> <div class="language-shell highlighter-rouge"><pre class="highlight"><code><span class="gp">$ </span><span class="nb">cd</span> ~/Desktop/kali-2017-1-x64.vmwarevm/
+<span class="gp">$ </span>/Applications/VMware<span class="se">\ </span>Fusion.app/Contents/Library/vmware-vdiskmanager -d Virtual<span class="se">\ </span>Disk.vmdk
+  Defragment: 100% <span class="k">done</span>.
+Defragmentation completed successfully.
+<span class="gp">$ </span>/Applications/VMware<span class="se">\ </span>Fusion.app/Contents/Library/vmware-vdiskmanager -k Virtual<span class="se">\ </span>Disk.vmdk
+  Shrink: 100% <span class="k">done</span>.
+Shrink completed successfully.
+<span class="err">$</span>
+</code></pre></div> <p>Lastly, we will compress the contents of the VM into an archive (box) that is readable by Vagrant. This can take about 10 minutes so feel free to grab a coffee.</p> <div class="language-shell highlighter-rouge"><pre class="highlight"><code><span class="gp">$ </span>tar -czvf kali-2017-x64.box ./<span class="k">*</span>
+...
+<span class="gp">$ </span>mv kali-2017-x64.box ~/Desktop/
+<span class="gp">$ </span><span class="nb">cd</span> ~/Desktop/
+</code></pre></div> <h2 id="2-vagrant">2. Vagrant</h2> <p>At this point we no longer need the Kali VM that we created with VMware. Feel free to delete it.</p> <p>The first thing we’re going to do is check if the Vagrant VMware plugin has been added. Installation steps for adding this plugin to Vagrant can be found <a href="https://www.vagrantup.com/docs/vmware/installation.html">here</a>.</p> <div class="language-shell highlighter-rouge"><pre class="highlight"><code><span class="gp">$ </span>vagrant plugin list
+vagrant-share <span class="o">(</span>1.1.8<span class="o">)</span>
+  - Version Constraint: 1.1.8
+vagrant-vmware-fusion <span class="o">(</span>4.0.19<span class="o">)</span>
+</code></pre></div> <p>Next, we’ll add the recently created box into Vagrant. The value supplied to the name parameter can be set to anything you want.</p> <div class="language-shell highlighter-rouge"><pre class="highlight"><code><span class="gp">$ </span><span class="nb">cd</span> ~/Desktop/
+<span class="gp">$ </span>vagrant box add kali-2017-x64.box --name kali-2017-x64
+<span class="gp">$ </span>vagrant box list
+kali-2017-x64       <span class="o">(</span>vmware_fusion, 0<span class="o">)</span>
+<span class="err">$</span>
+</code></pre></div> <p>The box added into Vagrant exists as a base box, this is essentially the “gold image”. Any modifications to a linked clone of this box will not be made to the base box itself.</p> <p>Before bringing up a clone of the box, we need to create a couple of directories and make configurations to the Vagrantfile.</p> <div class="highlighter-rouge"><pre class="highlight"><code>$ cd ~/Desktop/
+$ mkdir -p kali-x64/vagrant_data
+$ cd kali-x64/
+$ vagrant init
+$ ls
+Vagrantfile  vagrant_data
+$
+</code></pre></div> <p>A Vagrantfile is created once the <code class="highlighter-rouge">vagrant init</code> command is executed. Think of this file as a blank canvas that we can use to configure our cloned Vagrant box.</p> <p>Below is a copy of the Vagrantfile that I am using for the kali-2017-x64 box. The <code class="highlighter-rouge">config.ssh.private_key_path</code> will need to be changed to your SSH private key.</p> <p>Something else to note is the networking capabilities of this Vagrantfile. Currently, the network interface is configured in NAT mode. If the comment tag is removed from the line that reads <code class="highlighter-rouge">v.vmx["ethernet0.connectiontype"] = "bridged"</code>, then the Vagrant box will be on the same network as your host system and assigned an IP address by DHCP (assuming that DHCP is enabled on the local network). I have not experimented with <a href="https://www.vagrantup.com/docs/networking/forwarded_ports.html">Vagrant port-forwarding configurations</a> in VMware. I anticipate that these will need to be made in the vmx configuration given the previous issues I have experienced.</p> <div class="language-ruby highlighter-rouge"><pre class="highlight"><code><span class="c1"># -*- mode: ruby -*-</span>
+<span class="c1"># vi: set ft=ruby :</span>
+
+<span class="n">current_dir</span> <span class="o">=</span> <span class="no">File</span><span class="p">.</span><span class="nf">dirname</span><span class="p">(</span><span class="kp">__FILE__</span><span class="p">)</span>
+
+<span class="no">Vagrant</span><span class="p">.</span><span class="nf">configure</span><span class="p">(</span><span class="s2">"2"</span><span class="p">)</span> <span class="k">do</span> <span class="o">|</span><span class="n">config</span><span class="o">|</span>
+  <span class="n">config</span><span class="p">.</span><span class="nf">vm</span><span class="p">.</span><span class="nf">box</span> <span class="o">=</span> <span class="s2">"kali-2017-x64"</span>
+  <span class="n">config</span><span class="p">.</span><span class="nf">ssh</span><span class="p">.</span><span class="nf">username</span> <span class="o">=</span> <span class="s2">"root"</span>
+  <span class="n">config</span><span class="p">.</span><span class="nf">ssh</span><span class="p">.</span><span class="nf">private_key_path</span> <span class="o">=</span> <span class="s2">"/Users/me/.ssh/vagrant-demo"</span>
+
+  <span class="n">config</span><span class="p">.</span><span class="nf">vm</span><span class="p">.</span><span class="nf">provider</span> <span class="s2">"vmware_fusion"</span> <span class="k">do</span> <span class="o">|</span><span class="n">v</span><span class="o">|</span>
+    <span class="n">v</span><span class="p">.</span><span class="nf">gui</span> <span class="o">=</span> <span class="kp">true</span>
+    <span class="n">v</span><span class="p">.</span><span class="nf">vmx</span><span class="p">[</span><span class="s2">"memsize"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"2048"</span>
+    <span class="n">v</span><span class="p">.</span><span class="nf">vmx</span><span class="p">[</span><span class="s2">"numvcpus"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"2"</span>
+    <span class="n">v</span><span class="p">.</span><span class="nf">vmx</span><span class="p">[</span><span class="s2">"displayName"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"Kali 2017.1 x64"</span>
+    <span class="n">v</span><span class="p">.</span><span class="nf">vmx</span><span class="p">[</span><span class="s2">"ide1:0.filename"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">""</span>
+    <span class="n">v</span><span class="p">.</span><span class="nf">vmx</span><span class="p">[</span><span class="s2">"sharedfolder.maxnum"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"1"</span>
+
+    <span class="c1"># shared folders</span>
+    <span class="n">v</span><span class="p">.</span><span class="nf">vmx</span><span class="p">[</span><span class="s2">"sharedFolder0.present"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"true"</span>
+    <span class="n">v</span><span class="p">.</span><span class="nf">vmx</span><span class="p">[</span><span class="s2">"sharedFolder0.enabled"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"true"</span>
+    <span class="n">v</span><span class="p">.</span><span class="nf">vmx</span><span class="p">[</span><span class="s2">"sharedFolder0.readAccess"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"true"</span>
+    <span class="n">v</span><span class="p">.</span><span class="nf">vmx</span><span class="p">[</span><span class="s2">"sharedFolder0.writeAccess"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"true"</span>
+    <span class="n">v</span><span class="p">.</span><span class="nf">vmx</span><span class="p">[</span><span class="s2">"sharedFolder0.hostPath"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"</span><span class="si">#{</span><span class="n">current_dir</span><span class="si">}</span><span class="s2">/vagrant_data"</span>
+    <span class="n">v</span><span class="p">.</span><span class="nf">vmx</span><span class="p">[</span><span class="s2">"sharedFolder0.guestName"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"vagrant_data"</span>
+    <span class="n">v</span><span class="p">.</span><span class="nf">vmx</span><span class="p">[</span><span class="s2">"sharedFolder0.expiration"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"never"</span>
+
+    <span class="c1"># networking</span>
+    <span class="c1"># NAT is enabled if bridged is commented out</span>
+    <span class="c1"># v.vmx["ethernet0.connectiontype"] = "bridged"</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+</code></pre></div> <p>Once the configurations have been made to the Vagrantfile we can <code class="highlighter-rouge">vagrant up</code>. This spins up a linked clone of the kali-2017-x64 Vagrant box. There will be several warnings which are safe to ignore. Including the rather verbose message at the end which reads “<em>Vagrant attempted to execute the capability …</em>”.</p> <div class="language-shell highlighter-rouge"><pre class="highlight"><code><span class="gp">$ </span><span class="nb">cd</span> ~/Desktop/kali-x64/
+<span class="gp">$ </span>vagrant up
+Bringing machine <span class="s1">'default'</span> up with <span class="s1">'vmware_fusion'</span> provider...
+<span class="gp">==&gt; </span>default: Cloning VMware VM: <span class="s1">'kali-2017-x64'</span>. This can take some time...
+<span class="gp">==&gt; </span>default: Verifying vmnet devices are healthy...
+<span class="gp">==&gt; </span>default: Preparing network adapters...
+WARNING: The VMX file <span class="k">for </span>this box contains a setting that is automatically overwritten by Vagrant
+WARNING: when started. Vagrant will stop overwriting this setting <span class="k">in </span>an upcoming release which may
+WARNING: prevent proper networking setup. Below is the detected VMX setting:
+WARNING:
+WARNING:   ethernet0.pcislotnumber <span class="o">=</span> <span class="s2">"33"</span>
+WARNING:
+WARNING: If networking fails to properly configure, it may require this VMX setting. It can be manually
+WARNING: applied via the Vagrantfile:
+WARNING:
+WARNING:   Vagrant.configure<span class="o">(</span>2<span class="o">)</span> <span class="k">do</span> |config|
+WARNING:     config.vm.provider :vmare_fusion <span class="k">do</span> |vmware|
+WARNING:       vmware.vmx[<span class="s2">"ethernet0.pcislotnumber"</span><span class="o">]</span> <span class="o">=</span> <span class="s2">"33"</span>
+WARNING:     end
+WARNING:   end
+WARNING:
+WARNING: For more information: https://www.vagrantup.com/docs/vmware/boxes.html#vmx-whitelisting
+<span class="gp">==&gt; </span>default: Starting the VMware VM...
+<span class="gp">==&gt; </span>default: Waiting <span class="k">for </span>machine to boot. This may take a few minutes...
+    default: SSH address: 192.168.156.215:22
+    default: SSH username: root
+    default: SSH auth method: private key
+<span class="gp">==&gt; </span>default: Machine booted and ready!
+<span class="gp">==&gt; </span>default: Forwarding ports...
+    default: -- 22 <span class="o">=</span>&gt; 2222
+<span class="gp">==&gt; </span>default: Configuring network adapters within the VM...
+Vagrant attempted to execute the capability <span class="s1">'configure_networks'</span>
+on the detect guest OS <span class="s1">'linux'</span>, but the guest doesnt
+support that capability. This capability is required <span class="k">for </span>your
+configuration of Vagrant. Please either reconfigure Vagrant to
+avoid this capability or fix the issue by creating the capability.
+<span class="err">$</span>
+</code></pre></div> <p>After spinning up the kali-2017-x64 Vagrant box, we can <code class="highlighter-rouge">vagrant ssh</code> into it and start interacting with the box. In the example below, we create a testfile in a shared folder from our host that is observable in our Vagrant box.</p> <div class="language-shell highlighter-rouge"><pre class="highlight"><code><span class="gp">$ </span>vagrant ssh
+
+<span class="gp">root@kali:~# </span><span class="nb">cd</span> /mnt/hgfs/vagrant_data/
+<span class="gp">root@kali:/mnt/hgfs/vagrant_data# </span>touch testfile
+<span class="gp">root@kali:/mnt/hgfs/vagrant_data# </span><span class="nb">exit
+logout
+</span>Connection to 192.168.156.215 closed.
+<span class="gp">$ </span><span class="nb">cd </span>vagrant_data/
+<span class="gp">$ </span>ls
+testfile
+<span class="err">$</span>
+</code></pre></div> <p>It is also <strong>important</strong> to take note of the release description for later use. This should be “Kali GNU/Linux Rolling”, but could be different if you’re reading this blog and using another custom operating system build.</p> <div class="highlighter-rouge"><pre class="highlight"><code>$ vagrant ssh
+
+root@kali:~# cat /etc/*release | grep DESC
+DISTRIB_DESCRIPTION="Kali GNU/Linux Rolling"
+root@kali:~# exit
+logout
+Connection to 192.168.156.215 closed.
+</code></pre></div> <p>Once the box has been exited the virtual instance is still running.</p> <div class="language-shell highlighter-rouge"><pre class="highlight"><code><span class="gp">$ </span>vagrant global-status  
+id       name    provider      state   directory
+---------------------------------------------------------------------------
+3c18ff0  default vmware_fusion running /Users/me/Desktop/kali-x64
+...
+</code></pre></div> <p>We can use <code class="highlighter-rouge">vagrant halt</code> to shut down the VM or <code class="highlighter-rouge">vagrant suspend</code> to suspend the VM. We’ll leave it up and running for now.</p> <p>At this point, we have successfully created a custom Vagrant box from a VMware VM!</p> <h2 id="3-chef">3. Chef</h2> <p>We need to do a little housekeeping before we can start provisioning our Vagrant box with Chef.</p> <h3 id="31-housekeeping">3.1 Housekeeping</h3> <p>The first thing we’ll need to do is install <a href="https://downloads.chef.io/chefdk#mac_os_x">chefdk</a>.</p> <p>After that, ensure that Ruby &gt;=2.3.1 is installed on your host. You can use the following instructions if you have the homebrew package manager installed.</p> <div class="language-shell highlighter-rouge"><pre class="highlight"><code><span class="gp">$ </span>brew install rbenv ruby-build
+<span class="gp">$ </span><span class="nb">echo</span> <span class="s1">'if which rbenv &gt; /dev/null; then eval "$(rbenv init -)"; fi'</span> &gt;&gt; ~/.bash_profile
+<span class="gp">$ </span><span class="nb">source</span> ~/.bash_profile
+<span class="gp">$ </span>rbenv install 2.3.1
+<span class="gp">$ </span>rbenv global 2.3.1
+<span class="gp">$ </span>ruby -v
+</code></pre></div> <p>We’re then going to install a couple of Ruby gems, most notably knife-solo which will allow us to install Chef and use Chef to interact with our Vagrant box.</p> <div class="language-shell highlighter-rouge"><pre class="highlight"><code><span class="gp">$ </span>gem install net-ssh -v 3.2.0
+<span class="gp">$ </span>gem install net-ssh knife-solo
+</code></pre></div> <p>After knife-solo has been installed, we need to make an edit to <code class="highlighter-rouge">/Users/me/.rbenv/versions/2.3.1/lib/ruby/gems/2.3.0/gems/knife-solo-0.5.1/lib/knife-solo/bootstraps/linux.rb</code>.</p> <p>We are concerned with the <code class="highlighter-rouge">distro</code> function located on line 70 and want to add the <code class="highlighter-rouge">Kali GNU/Linux Rolling</code> case statement:</p> <div class="language-ruby highlighter-rouge"><pre class="highlight"><code><span class="k">def</span> <span class="nf">distro</span>
+  <span class="k">return</span> <span class="vi">@distro</span> <span class="k">if</span> <span class="vi">@distro</span>
+  <span class="vi">@distro</span> <span class="o">=</span> <span class="k">case</span> <span class="n">issue</span>
+  <span class="k">when</span> <span class="sr">%r{Kali GNU/Linux Rolling}</span>
+    <span class="p">{</span><span class="ss">:type</span> <span class="o">=&gt;</span> <span class="s2">"debianoid_gem"</span><span class="p">}</span>
+  <span class="k">when</span> <span class="sr">%r{Debian GNU/Linux [678]}</span>
+    <span class="p">{</span><span class="ss">:type</span> <span class="o">=&gt;</span> <span class="p">(</span><span class="n">x86?</span> <span class="p">?</span> <span class="s2">"debianoid_omnibus"</span> <span class="p">:</span> <span class="s2">"debianoid_gem"</span><span class="p">)}</span>
+  <span class="k">when</span> <span class="sr">%r{Debian}</span>
+    <span class="p">{</span><span class="ss">:type</span> <span class="o">=&gt;</span> <span class="s2">"debianoid_gem"</span><span class="p">}</span>
+  <span class="k">when</span> <span class="sr">%r{Raspbian}</span>
+    <span class="p">{</span><span class="ss">:type</span> <span class="o">=&gt;</span> <span class="s2">"debianoid_gem"</span><span class="p">}</span>
+  <span class="k">when</span> <span class="sr">%r{Linux Mint}</span>
+    <span class="p">.</span><span class="nf">.</span><span class="o">.</span>
+</code></pre></div> <p>This will tell knife-solo to treat a release that has the description “Kali GNU/Linux Rolling” as Debian.</p> <p>That should wrap up all of the housekeeping steps.</p> <h3 id="32-creating-chef-cookbooks">3.2 Creating Chef cookbooks</h3> <p>I’m going to preface this section by saying that I am relatively new to Chef and could be doing this completely wrong. Please correct me if you think I can do this better. From my understanding, the organization of Chef kitchens is similar to the following:</p> <div class="language-shell highlighter-rouge"><pre class="highlight"><code>chef-kitchen
+<span class="gp">-&gt; </span>cookbooks
+  -&gt; cookbook_for_updates
+    -&gt; recipe
+  -&gt; cookbook_for_git_repos
+    -&gt; recipe
+  -&gt; cookbook_for_system_configs
+    -&gt; recipe
+  -&gt; cookbook_for_xyz
+    -&gt; recipe
+<span class="gp">-&gt; </span>nodes
+  -&gt; 192.168.1.1
+    -&gt; recipe[cookbook_for_updates, cookbook_for_system_configs]
+  -&gt; 192.168.1.2
+    -&gt; recipe[cookbook_for_updates, cookbook_for_git_repos, cookbook_for_system_configs, cookbook_for_xyz]
+  -&gt; 192.168.1.13
+    -&gt; recipe[cookbook_for_system_configs, cookbook_for_xyz]
+</code></pre></div> <p>We’ll navigate back to our Vagrant kali-x64 directory and create a Chef kitchen named kali_kitchen.</p> <div class="language-shell highlighter-rouge"><pre class="highlight"><code><span class="gp">$ </span><span class="nb">cd</span> ~/Desktop/kali-x64/
+<span class="gp">$ </span>knife solo init kali_kitchen
+</code></pre></div> <p>We’ll then create a cookbook within this kitchen called system_configurations/</p> <div class="language-shell highlighter-rouge"><pre class="highlight"><code><span class="gp">$ </span><span class="nb">cd </span>kali_kitchen/cookbooks
+<span class="gp">$ </span>chef generate cookbook system_configurations
+</code></pre></div> <p>Within the kali_kitchen, we can specify nodes, which in our case are Vagrant boxes, that will receive cookbooks created in this kitchen. Additionally, these nodes can receive some cookbooks or all of the cookbooks. The choice is yours.</p> <p>Next, we’ll create a recipe for the the system_configurations cookbook. This takes place by editing the <code class="highlighter-rouge">default.rb</code> file for the system_configurations cookbook. In the example below, we create a directory named “tools” and create a “bash_aliases” file.</p> <div class="language-ruby highlighter-rouge"><pre class="highlight"><code><span class="err">$</span> <span class="n">cat</span> <span class="n">system_configurations</span><span class="o">/</span><span class="n">recipes</span><span class="o">/</span><span class="n">default</span><span class="p">.</span><span class="nf">rb</span>
+
+<span class="c1">#</span>
+<span class="c1"># Cookbook:: system_configurations</span>
+<span class="c1"># Recipe:: default</span>
+<span class="c1">#</span>
+<span class="c1"># Copyright:: 2017, Sanjiv Kawa, All Rights Reserved.</span>
+
+<span class="n">directory</span> <span class="s1">'/tools/'</span> <span class="k">do</span>
+  <span class="n">owner</span> <span class="s1">'root'</span>
+  <span class="n">group</span> <span class="s1">'root'</span>
+  <span class="n">mode</span> <span class="s1">'0755'</span>
+  <span class="n">action</span> <span class="ss">:create</span>
+<span class="k">end</span>
+
+<span class="n">ret</span> <span class="o">=</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span>
+<span class="n">aliases</span> <span class="o">=</span> <span class="s2">"alias c='clear'"</span> <span class="o">+</span> <span class="n">ret</span> <span class="o">+</span>
+<span class="s2">"alias cdd='cd /Users/root/Desktop'"</span> <span class="o">+</span> <span class="n">ret</span> <span class="o">+</span>
+<span class="s2">"alias grip=</span><span class="se">\"</span><span class="s2">grep -Eo </span><span class="se">\'</span><span class="s2">[0-9]{1,3}</span><span class="se">\\</span><span class="s2">.[0-9]{1,3}</span><span class="se">\\</span><span class="s2">.[0-9]{1,3}</span><span class="se">\\</span><span class="s2">.[0-9]{1,3}</span><span class="se">\'\"</span><span class="s2">"</span> <span class="o">+</span> <span class="n">ret</span> <span class="o">+</span>
+<span class="s2">"alias l='ls -hal'"</span> <span class="o">+</span> <span class="n">ret</span> <span class="o">+</span>
+<span class="s2">"alias sau='sort | uniq'"</span> <span class="o">+</span> <span class="n">ret</span> <span class="o">+</span>
+
+<span class="n">file</span> <span class="s2">"/root/.bash_aliases"</span> <span class="k">do</span>
+  <span class="n">content</span> <span class="n">aliases</span>
+<span class="k">end</span>
+
+<span class="n">script</span> <span class="s2">"system_configurations"</span> <span class="k">do</span>
+  <span class="n">interpreter</span> <span class="s2">"bash"</span>
+  <span class="n">code</span> <span class="o">&lt;&lt;-</span><span class="no">EOH</span><span class="sh">
+    echo 'set completion-ignore-case On' &gt;&gt; ~/.inputrc
+    source /root/.bashrc
+</span><span class="no">    EOH</span>
+<span class="k">end</span>
+
+</code></pre></div> <h3 id="33-provisioning-vagrant-boxes-with-chef">3.3 Provisioning Vagrant boxes with Chef</h3> <p>Once changes have been made to our system_configurations cookbook, we’ll navigate back to our Chef kitchen in the Vagrant kali-x64 directory and prepare the Vagrant box. This will do several things such as, install the Chef client on the Vagrant box and make it a member node of our kali_kitchen.</p> <div class="language-shell highlighter-rouge"><pre class="highlight"><code><span class="gp">$ </span><span class="nb">cd</span> ~/Desktop/kali-x64/kali_kitchen
+<span class="gp">$ </span>knife solo prepare --identity-file ~/.ssh/vagrant-demo root@192.168.156.215
+Bootstrapping Chef...
+Updating apt caches...
+Installing required packages...
+Installing rubygems from source...
+Generating node config <span class="s1">'nodes/192.168.156.215.json'</span>...
+</code></pre></div> <p>As seen above, our Vagrant box is now part of kali_kitchen. We can now apply the system_configurations cookbook to the Vagrant box by editing the node’s <code class="highlighter-rouge">run_list</code>. This node will now receive the system_configurations recipe, previously defined in the <code class="highlighter-rouge">default.rb</code> file.</p> <div class="language-shell highlighter-rouge"><pre class="highlight"><code><span class="gp">$ </span>cat nodes/192.168.156.215.json
+<span class="o">{</span>
+  <span class="s2">"run_list"</span>: <span class="o">[</span>
+    <span class="s2">"recipe[system_configurations]"</span>
+  <span class="o">]</span>,
+  <span class="s2">"automatic"</span>: <span class="o">{</span>
+    <span class="s2">"ipaddress"</span>: <span class="s2">"192.168.156.215"</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div> <p>After editing the <code class="highlighter-rouge">run_list</code> node configuration, we can “cook” the recipe on our Vagrant box.</p> <div class="language-shell highlighter-rouge"><pre class="highlight"><code><span class="gp">$ </span><span class="nb">cd</span> ~/Desktop/kali-x64/kali_kitchen
+<span class="gp">$ </span>knife solo cook --identity-file ~/.ssh/vagrant-demo root@192.168.156.215
+Running Chef on 192.168.156.215...
+Uploading the kitchen...
+Generating solo config...
+Running Chef: sudo chef-solo -c ~/chef-solo/solo.rb -j ~/chef-solo/dna.json
+Starting Chef Client, version 13.0.118
+resolving cookbooks <span class="k">for </span>run list: <span class="o">[</span><span class="s2">"system_configurations"</span><span class="o">]</span>
+Synchronizing Cookbooks:
+  - system_configurations <span class="o">(</span>0.1.0<span class="o">)</span>
+Installing Cookbook Gems:
+Compiling Cookbooks...
+Converging 3 resources
+Recipe: system_configurations::default
+  <span class="k">*</span> directory[/tools/] action create
+  - create new directory /tools/
+  - change mode from <span class="s1">''</span> to <span class="s1">'0755'</span>
+  - change owner from <span class="s1">''</span> to <span class="s1">'root'</span>
+  - change group from <span class="s1">''</span> to <span class="s1">'root'</span>
+  <span class="k">*</span> file[/root/.bash_aliases] action create <span class="o">(</span>up to date<span class="o">)</span>
+  <span class="k">*</span> script[system_configurations] action run
+    - execute <span class="s2">"bash"</span>  <span class="s2">"/tmp/chef-script20170515-10727-op1gwo"</span>
+
+Running handlers:
+Running handlers <span class="nb">complete
+</span>Chef Client finished, 1/3 resources updated <span class="k">in </span>02 seconds
+<span class="err">$</span>
+</code></pre></div> <p>Our Vagrant box has now had various system configurations applied to it via Chef.</p> <div class="language-shell highlighter-rouge"><pre class="highlight"><code><span class="gp">root@kali:~# </span><span class="nb">alias
+alias </span><span class="nv">c</span><span class="o">=</span><span class="s1">'clear'</span>
+<span class="nb">alias </span><span class="nv">cdd</span><span class="o">=</span><span class="s1">'cd /Users/root/Desktop'</span>
+<span class="nb">alias </span><span class="nv">grip</span><span class="o">=</span><span class="s1">'grep -Eo '</span><span class="se">\'</span><span class="s1">'[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}'</span><span class="se">\'</span><span class="s1">''</span>
+<span class="nb">alias </span><span class="nv">l</span><span class="o">=</span><span class="s1">'ls -hal'</span>
+<span class="nb">alias </span><span class="nv">ls</span><span class="o">=</span><span class="s1">'ls --color=auto'</span>
+<span class="nb">alias </span><span class="nv">sau</span><span class="o">=</span><span class="s1">'sort | uniq'</span>
+<span class="nb">alias </span><span class="nv">search</span><span class="o">=</span><span class="s1">'reset; grep -H'</span>
+<span class="gp">root@kali:~# </span>ls / | grep -i too
+tools
+root@kali:~#
+</code></pre></div> <h3 id="34-other-cookbook-thoughts">3.4 Other cookbook thoughts</h3> <p>I have some cookbook ideas and over time will be adding them to <a href="https://github.com/skahwah/chef">my GitHub page</a>. This will be things like:</p> <ul> <li>A cookbook containing all of the tools I frequently use, this will download the tools into the /tools directory then install them</li> <li>A cookbook for updates and upgrades that runs periodically</li> </ul> <h2 id="4-staying-clean-with-vagrant-and-chef">4. Staying clean with Vagrant and Chef</h2> <p>All of this seems like a lot of work, but once your base box is created and your Chef cookbooks have been made, it’s really easy to rapidly provision systems prior to the start of an engagement. In addition, small Vagrant files result in your penetration testing environment becoming a lot smaller and the introduction of cookbooks make it completely portable.</p> <p>Let’s create a scenario. It’s Friday, you’ve collected all of your evidence and the pen-testing gig you were on to is now over. You can rip down your entire Vagrant environment with a single command:</p> <div class="language-shell highlighter-rouge"><pre class="highlight"><code><span class="gp">root@kali:~# </span><span class="nb">exit
+logout
+</span>Connection to 192.168.156.215 closed.
+<span class="gp">$ </span>vagrant destroy
+    default: Are you sure you want to destroy the <span class="s1">'default'</span> VM? <span class="o">[</span>y/N] y
+<span class="gp">==&gt; </span>default: Stopping the VMware VM...
+<span class="gp">==&gt; </span>default: Deleting the VM...
+<span class="err">$</span>
+</code></pre></div> <p>You can also delete any files you have copied into to your shared directory to ensure that there will be no cross-contamination or stray Client files:</p> <div class="language-shell highlighter-rouge"><pre class="highlight"><code><span class="gp">$ </span>rm -rf vagrant_data <span class="o">&amp;&amp;</span> mkdir vagrant_data
+</code></pre></div> <p>Monday comes around and you need a fresh environment for new pen-testing gig. This can be achieved in a just a couple of commands:</p> <div class="language-shell highlighter-rouge"><pre class="highlight"><code><span class="gp">$ </span>vagrant up
+<span class="gp">$ </span>knife solo prepare --identity-file ~/.ssh/vagrant-demo root@192.168.156.214
+<span class="gp">$ </span><span class="nb">cd </span>kali_kitchen
+<span class="gp">$ </span>vim nodes/192.168.156.214.json
+<span class="gp">$ </span>knife solo cook --identity-file ~/.ssh/vagrant-demo root@192.168.156.214
+<span class="gp">$ </span>vagrant ssh
+</code></pre></div> <div class="entry-meta">  <br> <hr> <span class="entry-tags"><a href="http://localhost:4000/tags/#Vagrant" title="Pages tagged Vagrant" class="tag"><span class="term">Vagrant</span></a><a href="http://localhost:4000/tags/#Chef" title="Pages tagged Chef" class="tag"><span class="term">Chef</span></a><a href="http://localhost:4000/tags/#Kali" title="Pages tagged Kali" class="tag"><span class="term">Kali</span></a><a href="http://localhost:4000/tags/#Penetration%20Testing" title="Pages tagged Penetration Testing" class="tag"><span class="term">Penetration Testing</span></a><a href="http://localhost:4000/tags/#VMware" title="Pages tagged VMware" class="tag"><span class="term">VMware</span></a><a href="http://localhost:4000/tags/#Packer" title="Pages tagged Packer" class="tag"><span class="term">Packer</span></a></span> <span class="social-share"> <a href="https://www.facebook.com/sharer/sharer.php?u=http://localhost:4000/Vagrant-and-Chef/" title="Share on Facebook" class="tag"> <span class="term"><i class="fa fa-facebook-square"></i> Like</span> </a> <a href="https://twitter.com/intent/tweet?text=http://localhost:4000/Vagrant-and-Chef/" title="Share on Twitter" class="tag"> <span class="term"><i class="fa fa-twitter-square"></i> Tweet</span> </a> <a href="https://plus.google.com/share?url=http://localhost:4000/Vagrant-and-Chef/" title="Share on Google+" class="tag"> <span class="term"><i class="fa fa-google-plus-square"></i> +1</span> </a> </span> <div style="clear:both"></div> </div> </div> </div> <section id="disqus_thread" class="animated fadeInUp"></section><!-- /#disqus_thread --> </header> <!-- JS --> <script src="http://localhost:4000/assets/js/jquery-1.12.0.min.js"></script> <script src="http://localhost:4000/assets/js/jquery.dlmenu.min.js"></script> <script src="http://localhost:4000/assets/js/jquery.goup.min.js"></script> <script src="http://localhost:4000/assets/js/jquery.magnific-popup.min.js"></script> <script src="http://localhost:4000/assets/js/jquery.fitvid.min.js"></script> <script src="http://localhost:4000/assets/js/scripts.js"></script> <!-- Asynchronous Google Analytics snippet --> <script> (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){ (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o), m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m) })(window,document,'script','//www.google-analytics.com/analytics.js','ga'); ga('create', 'UA-85516324-1', 'auto'); ga('require', 'linkid', 'linkid.js'); ga('send', 'pageview'); </script> <script type="text/javascript"> var disqus_shortname = 'sanjivkawa'; (function() { var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true; dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js'; (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq); })(); (function () { var s = document.createElement('script'); s.async = true; s.type = 'text/javascript'; s.src = '//' + disqus_shortname + '.disqus.com/count.js'; (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s); }()); </script> <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+</noscript> <!-- MathJax --> <script async src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>  </body>
+</html>
