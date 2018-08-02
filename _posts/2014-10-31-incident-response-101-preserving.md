@@ -19,7 +19,7 @@ As a result, disconnecting an infected host is not the first thing that should b
 
 The information that should be gathered consists of time stamps, network connections which are listening and/or established, system information, current running processes and users in the administrators group.
 
-I've created a pretty speedy script (<5 seconds run time) which gathers all of this information in a text file named $hostname.txt on the Desktop of the current user. The script can be found <a href="https://drive.google.com/file/d/0B9YAGU9c9zmKOWQ2T2YzSXY5TFE/view?usp=sharing">here</a>.
+I've created a pretty speedy script (<5 seconds run time) which gathers all of this information in a text file named $hostname.txt on the Desktop of the current user. The script can be found <a href="https://github.com/skahwah/skahwah.github.io/blob/master/_data/IR_DUMP.zip">here</a>.
 
 After this information is gathered, the next steps in the incident response procedure can be taken. This is where you can determine whether network isolation is necessary or not.
 
