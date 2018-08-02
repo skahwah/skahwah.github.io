@@ -75,12 +75,7 @@ Uncompressing NVIDIA Accelerated Graphics Driver for Linux-x86_64 367.35........
 
 After the Kernel modules are built, the NVIDIA GRID K520 driver installation process will start.
 
-<center><object data="https://github.com/skahwah/skahwah.github.io/blob/master/_data/aws.pdf" type="application/pdf" height="480px">
-    <embed src="https://github.com/skahwah/skahwah.github.io/blob/master/_data/aws.pdf">
-        <p>This browser does not support PDFs. Please download the PDF to view it: <a href="https://github.com/skahwah/skahwah.github.io/blob/master/_data/aws.pdf">Download PDF</a>.</p>
-    </embed>
-</object></center>
-
+<center><iframe frameborder="0" height="480" src="https://www.scribd.com/embeds/385323752/content?start_page=1&view_mode=scroll&access_key=key-A2pMiGadX9wIGf8Lhspp&show_recommendations=true" width="640;"></iframe></center>
 
 * Accept: License Agreement
 * OK: For both of the X warnings
