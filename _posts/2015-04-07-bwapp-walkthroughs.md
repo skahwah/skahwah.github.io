@@ -23,4 +23,4 @@ A7: Missing Functional Level Access Control
 
 For me, the goal wasn't to complete a walkthrough of every possible module in bWAPP, but just the areas which I found more interesting than others. Hopefully these help someone in need :)
 
-<center><iframe frameborder="0" src="https://docs.google.com/file/d/0B9YAGU9c9zmKY0RDSW1FRDJDSXM/preview" height="480" width="640;"></iframe></center>
+<center><iframe frameborder="0" src="https://www.scribd.com/embeds/385323969/content?start_page=1&view_mode=scroll&access_key=key-5rg34ferA6J4nej2d011&show_recommendations=true" height="480" width="640;"></iframe></center>
